@@ -143,5 +143,11 @@ app.get('/health/detailed', async (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`WhatsApp Delivery Platform server running on port ${PORT}`);
-  console.log(`Webhook endpoint: http://localhost:${PORT}/api/whatsapp/webhook`);
+  
+  // Show appropriate webhook URL based on environment
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`Webhook endpoint: ${process.env.RENDER_EXTERNAL_URL || 'https://whatsapp-delivery-zimbabwe.onrender.com'}/api/whatsapp/webhook`);
+  } else {
+    console.log(`Webhook endpoint: http://localhost:${PORT}/api/whatsapp/webhook`);
+  }
 });
