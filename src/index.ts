@@ -23,6 +23,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// DEBUG MIDDLEWARE: Log ALL incoming requests to webhook endpoint
+app.use('/api/whatsapp/webhook', (req, res, next) => {
+  console.log('🚨 WEBHOOK REQUEST INTERCEPTED:');
+  console.log('📡 Method:', req.method);
+  console.log('🔗 URL:', req.url);
+  console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+  console.log('🔍 Query params:', JSON.stringify(req.query, null, 2));
+  console.log('--- END INTERCEPT ---');
+  next();
+});
+
 // WhatsApp webhook endpoint
 app.get('/api/whatsapp/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
@@ -58,6 +70,15 @@ app.get('/api/whatsapp/webhook', (req, res) => {
 
 // Handle incoming WhatsApp messages
 app.post('/api/whatsapp/webhook', async (req, res) => {
+  // AGGRESSIVE DIAGNOSTIC: Log everything immediately before any checks
+  console.log('🚨🚨🚨 POST WEBHOOK HIT - AGGRESSIVE LOGGING START 🚨🚨🚨');
+  console.log('📦 Raw Body:', JSON.stringify(req.body, null, 2));
+  console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('🔍 Query:', JSON.stringify(req.query, null, 2));
+  console.log('📡 Method:', req.method);
+  console.log('🔗 URL:', req.url);
+  console.log('🚨🚨🚨 END AGGRESSIVE LOGGING 🚨🚨🚨');
+  
   try {
     // UNIVERSAL DIAGNOSTIC: Log raw webhook body immediately
     console.log('🔍 RAW WEBHOOK BODY RECEIVED:', JSON.stringify(req.body, null, 2));
