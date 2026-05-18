@@ -1,0 +1,7 @@
+tunnel: zim-delivery
+credentials-file: ~/.cloudflared/[TUNNEL_ID].json
+
+ingress:
+  - hostname: zim-delivery.trycloudflare.com
+    service: http://localhost:3000
+  - service: http_status:404

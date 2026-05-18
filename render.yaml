@@ -1,0 +1,21 @@
+services:
+  # WhatsApp Delivery Platform
+  - type: web
+    name: whatsapp-delivery-platform
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: SUPABASE_URL
+        value: https://jchlsknqqazpuzupdljt.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_jKI5NNmAIL94XAzVq6-iMA_I2GBuJ17
+      - key: WHATSAPP_VERIFY_TOKEN
+        value: test_verify_token
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        value: 1169872976198533
+      - key: WHATSAPP_ACCESS_TOKEN
+        value: EAAtLDXi1ZBYQBRSdx68W1RlvJ4xHGLRMRVauhCawA1nvW6UzhsF0l5ksNL5HCxeVe42gkR9mWBNZAFWOQpfcIjURBFpEdbEoU1ad0dtynnQb1avdTXc2humI0YNatFilZCCNezc8htdySSAMijDYP7qs946os80PRsVcXRwcaaPXjoCJBWSJooykk9jpZAxtCYKZBGxZBwV8rJ0TVruDQ9eeEiHsvLJZCQmngNMhMF3Eiv9hZAC69WGvT82vKZCHkmKOil56I1wfXWKGBg4HNqNVi

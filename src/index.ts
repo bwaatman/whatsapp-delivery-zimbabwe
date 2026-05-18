@@ -1,9 +1,19 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { runHealthCheck } from './health-check';
+import { WhatsAppFlowService } from './WhatsAppFlowService';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: '.env' });
+
+// Initialize flow service
+const whatsappFlowService = new WhatsAppFlowService();
+
+// Debug: Check if environment variables are loaded
+console.log('Environment variables loaded:');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,19 +28,30 @@ app.get('/api/whatsapp/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
+  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  console.log('🔍 Webhook verification attempt:');
+  console.log('Mode:', mode);
+  console.log('Token received:', token);
+  console.log('Token expected:', expectedToken);
+  console.log('Challenge:', challenge);
 
   // Check if a token and mode were sent
   if (mode && token) {
     // Check the mode and token sent are correct
-    if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+    if (mode === 'subscribe' && token === expectedToken) {
       // Respond with 200 OK and challenge token from the request
-      console.log('WEBHOOK_VERIFIED');
+      console.log('✅ WEBHOOK_VERIFIED');
       res.status(200).send(challenge);
     } else {
       // Responds with '403 Forbidden' if verify tokens do not match
+      console.log('❌ Token mismatch or wrong mode');
+      console.log('Mode check:', mode === 'subscribe');
+      console.log('Token check:', token === expectedToken);
       res.sendStatus(403);
     }
   } else {
+    console.log('❌ Missing mode or token');
     res.sendStatus(400);
   }
 });
@@ -66,52 +87,57 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
   }
 });
 
-// Process individual WhatsApp message
+// Process individual WhatsApp message using the new flow service
 async function processWhatsAppMessage(message: any) {
-  const messageType = message.type;
   const from = message.from; // Customer phone number
   const timestamp = message.timestamp;
 
-  console.log(`Processing ${messageType} message from ${from}`);
+  console.log(`📱 Processing WhatsApp message from ${from}`);
+  console.log(`⏰ Timestamp: ${timestamp}`);
+  console.log(`📨 Message type: ${message.type}`);
 
-  switch (messageType) {
-    case 'text':
-      const textMessage = message.text.body;
-      console.log(`Text message: ${textMessage}`);
-      // TODO: Process text message (order placement, etc.)
-      break;
-
-    case 'location':
-      const location = {
-        latitude: message.location.latitude,
-        longitude: message.location.longitude,
-        name: message.location.name || '',
-        address: message.location.address || ''
-      };
-      console.log(`Location message:`, location);
-      // TODO: Process location message (delivery coordinates)
-      break;
-
-    case 'image':
-    case 'document':
-    case 'audio':
-    case 'video':
-      console.log(`Received ${messageType} message from ${from}`);
-      // TODO: Handle media messages if needed
-      break;
-
-    default:
-      console.log(`Unsupported message type: ${messageType}`);
-  }
+  // Delegate all processing to the WhatsAppFlowService
+  await whatsappFlowService.processWhatsAppMessage(from, message);
 }
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    service: 'WhatsApp Delivery Platform'
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const healthReport = await runHealthCheck();
+    res.status(200).json(healthReport);
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed',
+      service: 'WhatsApp Delivery Platform'
+    });
+  }
+});
+
+// Detailed health check endpoint
+app.get('/health/detailed', async (req, res) => {
+  try {
+    console.log('Running detailed health check...');
+    const healthReport = await runHealthCheck();
+    
+    console.log('\n=== HEALTH CHECK SUMMARY ===');
+    console.log(`Overall Status: ${healthReport.overall.toUpperCase()}`);
+    console.log(`Database Connection: ${healthReport.database.connection ? '✅' : '❌'}`);
+    console.log(`Schema Tables: ${Object.values(healthReport.database.schema).filter(v => v).length}/4 verified`);
+    console.log(`Operations: ${Object.values(healthReport.database.operations).filter(v => v).length}/4 working`);
+    console.log('=============================\n');
+    
+    res.status(200).json(healthReport);
+  } catch (error) {
+    console.error('Detailed health check failed:', error);
+    res.status(500).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed',
+      service: 'WhatsApp Delivery Platform'
+    });
+  }
 });
 
 // Start server
