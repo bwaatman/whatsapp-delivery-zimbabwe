@@ -16,7 +16,7 @@ console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Debug: Show port configuration
 console.log('🔧 Port Configuration:');
