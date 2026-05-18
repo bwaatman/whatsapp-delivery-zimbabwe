@@ -59,31 +59,78 @@ app.get('/api/whatsapp/webhook', (req, res) => {
 // Handle incoming WhatsApp messages
 app.post('/api/whatsapp/webhook', async (req, res) => {
   try {
-    const data = req.body;
+    // UNIVERSAL DIAGNOSTIC: Log raw webhook body immediately
+    console.log('🔍 RAW WEBHOOK BODY RECEIVED:', JSON.stringify(req.body, null, 2));
     
-    // Log the incoming webhook data for debugging
-    console.log('Incoming WhatsApp webhook:', JSON.stringify(data, null, 2));
+    // Check for Meta signature validation
+    const signature = req.headers['x-hub-signature-256'];
+    console.log('🔐 Meta Signature Check Status:', signature ? 'PRESENT' : 'MISSING');
+    if (signature) {
+      console.log('🔐 Signature Value:', signature);
+    }
+    
+    const data = req.body;
+    console.log('📊 Webhook object type:', data?.object);
+    console.log('📊 Entry count:', data?.entry?.length || 0);
 
     // Check if this is a WhatsApp message
     if (data.object === 'whatsapp_business_account') {
+      console.log('✅ WhatsApp Business Account detected');
+      
       // Process each entry
       for (const entry of data.entry) {
+        console.log('🔄 Processing entry:', entry.id);
+        console.log('🔄 Changes count:', entry.changes?.length || 0);
+        
         for (const change of entry.changes) {
+          console.log('🔄 Change field:', change.field);
+          
           if (change.field === 'messages') {
+            console.log('📨 Messages field detected');
             const messages = change.value.messages;
+            console.log('📨 Messages count:', messages?.length || 0);
             
-            for (const message of messages) {
-              await processWhatsAppMessage(message);
+            // SAFELY EXTRACT FIRST MESSAGE
+            if (messages && messages.length > 0) {
+              const firstMessage = messages[0];
+              console.log('📱 First message extraction:');
+              console.log('  - From:', firstMessage.from);
+              console.log('  - Type:', firstMessage.type);
+              console.log('  - ID:', firstMessage.id);
+              console.log('  - Timestamp:', firstMessage.timestamp);
+              
+              if (firstMessage.text) {
+                console.log('  - Text body:', firstMessage.text.body);
+              }
+              if (firstMessage.location) {
+                console.log('  - Location:', firstMessage.location);
+              }
+              
+              for (const message of messages) {
+                console.log('🔄 Processing message:', message.id);
+                await processWhatsAppMessage(message);
+              }
+            } else {
+              console.log('❌ No messages found in change.value.messages');
             }
+          } else {
+            console.log('⚠️ Non-messages change field:', change.field);
           }
         }
       }
+    } else {
+      console.log('❌ Not a WhatsApp Business Account object:', data.object);
     }
 
+    console.log('✅ Webhook processing completed - sending 200 response');
     res.status(200).send('EVENT_RECEIVED');
   } catch (error) {
-    console.error('Error processing webhook:', error);
-    res.status(500).send('Error processing webhook');
+    console.error('❌ CRITICAL ERROR in webhook handler:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack available');
+    
+    // ALWAYS send 200 response to Meta even on error
+    console.log('📤 Sending error response 200 to Meta (to prevent retries)');
+    res.status(200).send('EVENT_RECEIVED');
   }
 });
 
@@ -92,12 +139,28 @@ async function processWhatsAppMessage(message: any) {
   const from = message.from; // Customer phone number
   const timestamp = message.timestamp;
 
-  console.log(`📱 Processing WhatsApp message from ${from}`);
-  console.log(`⏰ Timestamp: ${timestamp}`);
-  console.log(`📨 Message type: ${message.type}`);
+  console.log(`📱 processWhatsAppMessage() called with:`);
+  console.log(`  - From: ${from}`);
+  console.log(`  - Timestamp: ${timestamp}`);
+  console.log(`  - Type: ${message.type}`);
+  console.log(`  - Message ID: ${message.id}`);
+  
+  if (message.text) {
+    console.log(`  - Text: "${message.text.body}"`);
+  }
+  if (message.location) {
+    console.log(`  - Location: ${message.location.latitude}, ${message.location.longitude}`);
+  }
 
-  // Delegate all processing to the WhatsAppFlowService
-  await whatsappFlowService.processWhatsAppMessage(from, message);
+  try {
+    console.log(`🔄 Delegating to WhatsAppFlowService...`);
+    // Delegate all processing to the WhatsAppFlowService
+    await whatsappFlowService.processWhatsAppMessage(from, message);
+    console.log(`✅ WhatsAppFlowService processing completed`);
+  } catch (error) {
+    console.error(`❌ WhatsAppFlowService error:`, error);
+    console.error(`❌ Error stack:`, error instanceof Error ? error.stack : 'No stack');
+  }
 }
 
 // Health check endpoint

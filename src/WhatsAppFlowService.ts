@@ -18,19 +18,34 @@ export class WhatsAppFlowService {
 
   async processWhatsAppMessage(from: string, message: any): Promise<void> {
     try {
+      console.log('🎯 WhatsAppFlowService.processWhatsAppMessage() ENTRY POINT');
       console.log('🔄 Starting WhatsApp flow processing...');
       console.log(`📱 Customer: ${from}`);
       console.log(`📨 Message type: ${message.type}`);
+      console.log(`📨 Message ID: ${message.id}`);
+      
+      if (message.text) {
+        console.log(`📝 Text content: "${message.text.body}"`);
+      }
+      if (message.location) {
+        console.log(`📍 Location: ${message.location.latitude}, ${message.location.longitude}`);
+      }
 
       // Step 1: Query for active orders (not delivered or cancelled)
       console.log('🔍 Checking for active orders...');
       const activeOrder = await this.findActiveOrder(from);
+      
+      console.log(`📊 Active order result:`, activeOrder ? `FOUND (ID: ${activeOrder.id}, Status: ${activeOrder.status})` : 'NONE');
 
       // Step 2: Route based on state and message type
+      console.log('🔄 Routing message by state...');
       await this.routeMessageByState(from, message, activeOrder);
+      
+      console.log('✅ WhatsAppFlowService.processWhatsAppMessage() COMPLETED');
 
     } catch (error) {
-      console.error('❌ Error in WhatsApp flow processing:', error);
+      console.error('❌ CRITICAL ERROR in WhatsApp flow processing:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack available');
     }
   }
 
