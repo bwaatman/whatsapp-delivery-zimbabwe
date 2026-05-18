@@ -18,6 +18,12 @@ console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌')
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Debug: Show port configuration
+console.log('🔧 Port Configuration:');
+console.log('  process.env.PORT:', process.env.PORT);
+console.log('  Using PORT:', PORT);
+console.log('  NODE_ENV:', process.env.NODE_ENV);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -225,8 +231,9 @@ app.get('/health/detailed', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`WhatsApp Delivery Platform server running on port ${PORT}`);
+  console.log(`🌐 Server listening on 0.0.0.0:${PORT} (accepting external traffic)`);
   
   // Show appropriate webhook URL based on environment
   if (process.env.NODE_ENV === 'production') {
