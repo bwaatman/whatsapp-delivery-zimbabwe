@@ -13,15 +13,14 @@
 
 ### **3. Environment Variables Required**
 
-Copy these exact variables to your Render Dashboard:
+🔐 **For security setup, see:** `ENVIRONMENT_SETUP.md`
 
-```
-SUPABASE_URL=https://jchlsknqqazpuzupdljt.supabase.co
-SUPABASE_ANON_KEY=sb_publishable_jKI5NNmAIL94XAzVq6-iMA_I2GBuJ17
-WHATSAPP_VERIFY_TOKEN=test_verify_token
-WHATSAPP_PHONE_NUMBER_ID=1169872976198533
-WHATSAPP_ACCESS_TOKEN=EAAtLDXi1ZBYQBRSdx68W1RlvJ4xHGLRMRVauhCawA1nvW6UzhsF0l5ksNL5HCxeVe42gkR9mWBNZAFWOQpfcIjURBFpEdbEoU1ad0dtynnQb1avdTXc2humI0YNatFilZCCNezc8htdySSAMijDYP7qs946os80PRsVcXRwcaaPXjoCJBWSJooykk9jpZAxtCYKZBGxZBwV8rJ0TVruDQ9eeEiHsvLJZCQmngNMhMF3Eiv9hZAC69WGvT82vKZCHkmKOil56I1wfXWKGBg4HNqNVi
-```
+Copy the exact values from `ENVIRONMENT_SETUP.md` to your Render Dashboard. This includes:
+- Supabase configuration
+- WhatsApp API credentials  
+- Server settings
+
+**Important:** Never commit real tokens to public repositories!
 
 ## 🚀 **Deployment Steps**
 
