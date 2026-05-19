@@ -114,40 +114,65 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
           
           if (change.field === 'messages') {
             console.log('📨 Messages field detected');
-            const messages = change.value.messages;
-            console.log('📨 Messages count:', messages?.length || 0);
             
-            // SAFELY EXTRACT FIRST MESSAGE
-            if (messages && messages.length > 0) {
-              const firstMessage = messages[0];
-              console.log('📱 First message extraction:');
-              console.log('  - From (webhook raw):', firstMessage.from);
-              console.log('  - Type:', firstMessage.type);
-              console.log('  - ID:', firstMessage.id);
-              console.log('  - Timestamp:', firstMessage.timestamp);
-              
-              // Log phone number analysis
-              console.log('🔍 Phone number analysis:');
-              console.log('  - Webhook from field:', firstMessage.from);
-              console.log('  - Length:', firstMessage.from.length);
-              console.log('  - Starts with +:', firstMessage.from.startsWith('+'));
-              console.log('  - Starts with 263:', firstMessage.from.startsWith('263'));
-              console.log('  - Approved test recipient:', process.env.TEST_PHONE_NUMBER || 'Not configured');
-              
-              if (firstMessage.text) {
-                console.log('  - Text body:', firstMessage.text.body);
-              }
-              if (firstMessage.location) {
-                console.log('  - Location:', firstMessage.location);
-              }
-              
-              for (const message of messages) {
-                console.log('🔄 Processing message:', message.id);
-                await processWhatsAppMessage(message);
-              }
-            } else {
-              console.log('❌ No messages found in change.value.messages');
+            // CRUCIAL: Extract according to Meta API specification
+            const entry = req.body.entry?.[0];
+            const change = entry?.changes?.[0];
+            const value = change?.value;
+            const messageData = value?.messages?.[0];
+            
+            // Extract text and phone number safely
+            const userMessageText = messageData?.text?.body;
+            const userPhoneNumber = messageData?.from;
+            
+            console.log('🎯 META API SPECIFICATION EXTRACTION:');
+            console.log('📋 req.body.entry?.[0]:', entry?.id || 'MISSING');
+            console.log('📋 entry?.changes?.[0]:', change?.field || 'MISSING');
+            console.log('📋 change?.value:', value?.messaging_product || 'MISSING');
+            console.log('📋 value?.messages?.[0]:', messageData ? 'EXISTS' : 'MISSING');
+            console.log('📋 messageData?.text?.body:', userMessageText || 'MISSING');
+            console.log('📋 messageData?.from:', userPhoneNumber || 'MISSING');
+            
+            // CRITICAL: Log extracted text for tracking
+            console.log('🔤 Extracted Text:', userMessageText);
+            console.log('📱 Extracted Phone Number:', userPhoneNumber);
+            
+            // Validate extraction
+            if (!messageData) {
+              console.log('❌ No message data found in value.messages[0]');
+              continue;
             }
+            
+            if (!userMessageText && !messageData.location) {
+              console.log('❌ No text or location found in message');
+              continue;
+            }
+            
+            console.log('📨 Messages count:', value?.messages?.length || 0);
+            console.log('📱 Message extraction successful:');
+            console.log('  - From (webhook raw):', userPhoneNumber);
+            console.log('  - Type:', messageData.type);
+            console.log('  - ID:', messageData.id);
+            console.log('  - Timestamp:', messageData.timestamp);
+            
+            // Log phone number analysis
+            console.log('🔍 Phone number analysis:');
+            console.log('  - Webhook from field:', userPhoneNumber);
+            console.log('  - Length:', userPhoneNumber?.length || 0);
+            console.log('  - Starts with +:', userPhoneNumber?.startsWith('+') || false);
+            console.log('  - Starts with 263:', userPhoneNumber?.startsWith('263') || false);
+            console.log('  - Approved test recipient:', process.env.TEST_PHONE_NUMBER || 'Not configured');
+            
+            if (messageData.text) {
+              console.log('  - Text body:', messageData.text.body);
+            }
+            if (messageData.location) {
+              console.log('  - Location:', messageData.location);
+            }
+            
+            // Process the extracted message
+            console.log('🔄 Processing message:', messageData.id);
+            await processWhatsAppMessage(messageData);
           } else {
             console.log('⚠️ Non-messages change field:', change.field);
           }
