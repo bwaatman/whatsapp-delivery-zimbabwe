@@ -160,7 +160,7 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
             console.log('  - Webhook from field:', userPhoneNumber);
             console.log('  - Length:', userPhoneNumber?.length || 0);
             console.log('  - Starts with +:', userPhoneNumber?.startsWith('+') || false);
-            console.log('  - Starts with 263:', userPhoneNumber?.startsWith('263') || false);
+            console.log('  - Starts with 27:', userPhoneNumber?.startsWith('27') || false);
             console.log('  - Approved test recipient:', process.env.TEST_PHONE_NUMBER || 'Not configured');
             
             if (messageData.text) {

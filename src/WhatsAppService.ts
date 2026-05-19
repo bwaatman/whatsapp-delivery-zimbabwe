@@ -60,9 +60,9 @@ export class WhatsAppService {
         console.log('  - After removing leading zero:', normalizedNumber);
       }
       
-      // Ensure country code (263 for Zimbabwe)
-      if (!normalizedNumber.startsWith('263')) {
-        normalizedNumber = '263' + normalizedNumber;
+      // Ensure country code (27 for South Africa)
+      if (!normalizedNumber.startsWith('27')) {
+        normalizedNumber = '27' + normalizedNumber;
         console.log('  - After adding country code:', normalizedNumber);
       }
       
