@@ -42,19 +42,43 @@ export class WhatsAppService {
   async sendTextMessage(to: string, message: string): Promise<boolean> {
     try {
       console.log('📤 Sending WhatsApp message...');
-      console.log('To:', to);
-      console.log('Message:', message);
+      console.log('📱 Incoming from webhook (raw):', to);
+      console.log('📱 Outbound to (raw):', to);
+      
+      // Normalize phone number to E.164 format
+      let normalizedNumber = to;
+      console.log('🔍 Normalization steps:');
+      console.log('  - Original:', to);
+      
+      // Remove all non-digit characters first
+      normalizedNumber = normalizedNumber.replace(/[^\d]/g, '');
+      console.log('  - After removing non-digits:', normalizedNumber);
+      
+      // Remove leading zeros
+      if (normalizedNumber.startsWith('0')) {
+        normalizedNumber = normalizedNumber.substring(1);
+        console.log('  - After removing leading zero:', normalizedNumber);
+      }
+      
+      // Ensure country code (263 for Zimbabwe)
+      if (!normalizedNumber.startsWith('263')) {
+        normalizedNumber = '263' + normalizedNumber;
+        console.log('  - After adding country code:', normalizedNumber);
+      }
+      
+      console.log('📱 Final normalized number:', normalizedNumber);
+      console.log('📱 Approved test recipient (from config):', process.env.TEST_PHONE_NUMBER || 'Not configured');
 
       const payload: WhatsAppMessage = {
         messaging_product: 'whatsapp',
-        to: to.replace(/[^\d]/g, ''), // Remove non-digits
+        to: normalizedNumber,
         text: {
           body: message
         },
         type: 'text'
       };
 
-      console.log('📋 Payload:', JSON.stringify(payload, null, 2));
+      console.log('📋 Outbound payload to Meta:', JSON.stringify(payload, null, 2));
 
       const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
       const headers = {

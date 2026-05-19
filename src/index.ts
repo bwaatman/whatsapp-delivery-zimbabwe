@@ -121,10 +121,18 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
             if (messages && messages.length > 0) {
               const firstMessage = messages[0];
               console.log('📱 First message extraction:');
-              console.log('  - From:', firstMessage.from);
+              console.log('  - From (webhook raw):', firstMessage.from);
               console.log('  - Type:', firstMessage.type);
               console.log('  - ID:', firstMessage.id);
               console.log('  - Timestamp:', firstMessage.timestamp);
+              
+              // Log phone number analysis
+              console.log('🔍 Phone number analysis:');
+              console.log('  - Webhook from field:', firstMessage.from);
+              console.log('  - Length:', firstMessage.from.length);
+              console.log('  - Starts with +:', firstMessage.from.startsWith('+'));
+              console.log('  - Starts with 263:', firstMessage.from.startsWith('263'));
+              console.log('  - Approved test recipient:', process.env.TEST_PHONE_NUMBER || 'Not configured');
               
               if (firstMessage.text) {
                 console.log('  - Text body:', firstMessage.text.body);
@@ -167,10 +175,16 @@ async function processWhatsAppMessage(message: any) {
   const timestamp = message.timestamp;
 
   console.log(`📱 processWhatsAppMessage() called with:`);
-  console.log(`  - From: ${from}`);
+  console.log(`  - From (webhook): ${from}`);
   console.log(`  - Timestamp: ${timestamp}`);
   console.log(`  - Type: ${message.type}`);
   console.log(`  - Message ID: ${message.id}`);
+  
+  // Log phone number tracing
+  console.log(`🔍 Number tracing in processWhatsAppMessage:`);
+  console.log(`  - Webhook from: ${from}`);
+  console.log(`  - Passed to WhatsAppFlowService: ${from}`);
+  console.log(`  - Approved test recipient: ${process.env.TEST_PHONE_NUMBER || 'Not configured'}`);
   
   if (message.text) {
     console.log(`  - Text: "${message.text.body}"`);
