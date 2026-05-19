@@ -124,29 +124,87 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
             const messageData = value?.messages?.[0];
             
             if (messageData) {
-              // Extract text and phone number using official pattern
-              const userMessageText = messageData?.text?.body;
+              // Extract different possible payload fields
+              const message = value?.messages?.[0];
+              const textBody = message?.text?.body;
+              const buttonReply = message?.interactive?.button_reply?.id;
+              const listReply = message?.interactive?.list_reply?.id;
+              const locationData = message?.location; // contains latitude and longitude
               const userPhoneNumber = messageData?.from;
               
-              console.log('🎯 OFFICIAL META SPEC EXTRACTION:');
-              console.log('📱 User Phone Number:', userPhoneNumber);
-              console.log('📝 Extracted Text:', userMessageText);
-              console.log('🆔 Message ID:', messageData?.id);
-              console.log('📨 Message Type:', messageData?.type);
-              console.log('⏰ Timestamp:', messageData?.timestamp);
+              // Combine them into a single normalized 'incomingIntent'
+              let userIntent = textBody || buttonReply || listReply;
+              if (locationData) userIntent = "LOCATION_SHARED";
               
-              // Additional logging for location if present
-              if (messageData?.location) {
-                console.log('📍 Location Data:', messageData.location);
+              // CATCH-ALL CLOUD API INBOUND EVENT LOG
+              console.log("👉 CLOUD API INBOUND EVENT:", { 
+                type: message?.type, 
+                intent: userIntent, 
+                location: locationData,
+                phoneNumber: userPhoneNumber,
+                messageId: messageData?.id,
+                timestamp: messageData?.timestamp
+              });
+              
+              // Detailed extraction logging
+              console.log('🎯 MULTI-TYPE MESSAGE EXTRACTION:');
+              console.log('📱 User Phone Number:', userPhoneNumber);
+              console.log('� Message Type:', message?.type);
+              console.log('🎯 Normalized Intent:', userIntent);
+              
+              if (textBody) {
+                console.log('📝 Text Body:', textBody);
+              }
+              if (buttonReply) {
+                console.log('🔘 Button Reply ID:', buttonReply);
+              }
+              if (listReply) {
+                console.log('📋 List Reply ID:', listReply);
+              }
+              if (locationData) {
+                console.log('📍 Location Data:', locationData);
+                console.log('🌐 Latitude:', locationData.latitude);
+                console.log('🌐 Longitude:', locationData.longitude);
               }
               
-              // Process all messages in the array
+              // Create normalized message object for processing
+              const normalizedMessage = {
+                ...message,
+                normalizedIntent: userIntent,
+                originalText: textBody,
+                buttonReply: buttonReply,
+                listReply: listReply,
+                locationData: locationData,
+                from: userPhoneNumber
+              };
+              
+              console.log('� Normalized Message Created:', {
+                id: normalizedMessage.id,
+                type: normalizedMessage.type,
+                intent: normalizedMessage.normalizedIntent,
+                hasLocation: !!normalizedMessage.locationData,
+                hasText: !!normalizedMessage.originalText,
+                hasButton: !!normalizedMessage.buttonReply,
+                hasList: !!normalizedMessage.listReply
+              });
+              
+              // Process all messages in the array with normalized data
               const messages = value?.messages || [];
               console.log('📨 Total Messages Count:', messages.length);
               
-              for (const message of messages) {
-                console.log('🔄 Processing message:', message.id);
-                await processWhatsAppMessage(message);
+              for (const msg of messages) {
+                // Enhance each message with normalized intent
+                const enhancedMsg = {
+                  ...msg,
+                  normalizedIntent: userIntent,
+                  originalText: textBody,
+                  buttonReply: buttonReply,
+                  listReply: listReply,
+                  locationData: locationData
+                };
+                
+                console.log('🔄 Processing enhanced message:', enhancedMsg.id);
+                await processWhatsAppMessage(enhancedMsg);
               }
             } else {
               console.log('❌ No messageData found in value.messages[0]');

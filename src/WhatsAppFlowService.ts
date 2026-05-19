@@ -24,11 +24,30 @@ export class WhatsAppFlowService {
       console.log(`📨 Message type: ${message.type}`);
       console.log(`📨 Message ID: ${message.id}`);
       
+      // USE NORMALIZED INTENT FROM WEBHOOK
+      const normalizedIntent = message.normalizedIntent;
+      console.log(`🎯 Normalized Intent: "${normalizedIntent}"`);
+      
+      // Log all available message types for debugging
+      if (message.originalText) {
+        console.log(`📝 Original Text: "${message.originalText}"`);
+      }
+      if (message.buttonReply) {
+        console.log(`� Button Reply: "${message.buttonReply}"`);
+      }
+      if (message.listReply) {
+        console.log(`📋 List Reply: "${message.listReply}"`);
+      }
+      if (message.locationData) {
+        console.log(`📍 Location: ${message.locationData.latitude}, ${message.locationData.longitude}`);
+      }
+      
+      // Legacy support for old message format
       if (message.text) {
-        console.log(`📝 Text content: "${message.text.body}"`);
+        console.log(`�📝 Legacy Text content: "${message.text.body}"`);
       }
       if (message.location) {
-        console.log(`📍 Location: ${message.location.latitude}, ${message.location.longitude}`);
+        console.log(`📍 Legacy Location: ${message.location.latitude}, ${message.location.longitude}`);
       }
 
       // Step 1: Query for active orders (not delivered or cancelled)
@@ -37,9 +56,9 @@ export class WhatsAppFlowService {
       
       console.log(`📊 Active order result:`, activeOrder ? `FOUND (ID: ${activeOrder.id}, Status: ${activeOrder.status})` : 'NONE');
 
-      // Step 2: Route based on state and message type
-      console.log('🔄 Routing message by state...');
-      await this.routeMessageByState(from, message, activeOrder);
+      // Step 2: Route based on state and normalized intent
+      console.log('🔄 Routing message by normalized intent...');
+      await this.routeMessageByState(from, message, activeOrder, normalizedIntent);
       
       console.log('✅ WhatsAppFlowService.processWhatsAppMessage() COMPLETED');
 
@@ -80,12 +99,13 @@ export class WhatsAppFlowService {
     }
   }
 
-  private async routeMessageByState(from: string, message: any, activeOrder: Order | null): Promise<void> {
+  private async routeMessageByState(from: string, message: any, activeOrder: Order | null, normalizedIntent?: string): Promise<void> {
     const messageType = message.type;
 
-    console.log('🎯 State-based routing decision:');
+    console.log('🎯 State-based routing decision (with normalized intent):');
     console.log(`- Has active order: ${activeOrder ? 'YES' : 'NO'}`);
     console.log(`- Message type: ${messageType}`);
+    console.log(`- Normalized intent: ${normalizedIntent || 'NONE'}`);
     console.log(`- Order status: ${activeOrder?.status || 'N/A'}`);
 
     // CASE 1: No active order exists
@@ -100,20 +120,40 @@ export class WhatsAppFlowService {
       return;
     }
 
-    // CASE 2 & 3: Pending order exists
+    // CASE 2 & 3: Pending order exists - USE NORMALIZED INTENT
     if (activeOrder.status === 'pending') {
-      if (messageType === 'location') {
-        await this.handlePendingOrderLocationFlow(from, message, activeOrder);
-      } else if (messageType === 'text') {
-        // Check if text contains Google Maps link (location)
-        if (message.text.body && message.text.body.includes('maps.google.com')) {
-          console.log('🗺️ Detected Google Maps link in text message');
-          await this.handlePendingOrderGoogleMapsFlow(from, message, activeOrder);
-        } else {
-          await this.handlePendingOrderTextFlow(from, message, activeOrder);
+      // Check for location sharing first (highest priority)
+      if (normalizedIntent === 'LOCATION_SHARED' || messageType === 'location') {
+        console.log('📍 Location detected - handling location flow');
+        if (message.locationData) {
+          await this.handlePendingOrderLocationFlow(from, message, activeOrder);
+        } else if (message.location) {
+          await this.handlePendingOrderLocationFlow(from, message, activeOrder);
         }
-      } else {
+      }
+      // Check for Google Maps link in text (legacy support)
+      else if (message.text?.body && message.text.body.includes('maps.google.com')) {
+        console.log('🗺️ Detected Google Maps link in text message');
+        await this.handlePendingOrderGoogleMapsFlow(from, message, activeOrder);
+      }
+      // Handle button replies
+      else if (message.buttonReply) {
+        console.log('🔘 Button reply detected - handling as text flow');
+        await this.handlePendingOrderTextFlow(from, message, activeOrder);
+      }
+      // Handle list replies
+      else if (message.listReply) {
+        console.log('📋 List reply detected - handling as text flow');
+        await this.handlePendingOrderTextFlow(from, message, activeOrder);
+      }
+      // Handle text messages (including normalized text intent)
+      else if (messageType === 'text' || normalizedIntent) {
+        console.log('📝 Text message detected - handling text flow');
+        await this.handlePendingOrderTextFlow(from, message, activeOrder);
+      }
+      else {
         console.log(`📎 Unsupported message type for pending order: ${messageType}`);
+        console.log(`📎 Normalized intent: ${normalizedIntent}`);
       }
       return;
     }
