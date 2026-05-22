@@ -16,13 +16,13 @@ console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌');
 
 // FORCE WHATSAPP LOGS - Explicit check for Render environment variables
-console.log("WHATSAPP_TOKEN Status:", process.env.WHATSAPP_TOKEN ? "✅ Loaded" : "❌ MISSING");
+console.log("WHATSAPP_ACCESS_TOKEN Status:", process.env.WHATSAPP_ACCESS_TOKEN ? "✅ Loaded" : "❌ MISSING");
 console.log("WHATSAPP_PHONE_NUMBER_ID Status:", process.env.WHATSAPP_PHONE_NUMBER_ID ? "✅ Loaded" : "❌ MISSING");
 
 // DIAGNOSTIC LOG: Verify WhatsApp environment variables
 console.log("Checking Environment Variables:", {
-  hasToken: !!process.env.WHATSAPP_TOKEN,
-  tokenLength: process.env.WHATSAPP_TOKEN?.length,
+  hasToken: !!process.env.WHATSAPP_ACCESS_TOKEN,
+  tokenLength: process.env.WHATSAPP_ACCESS_TOKEN?.length,
   phoneId: process.env.WHATSAPP_PHONE_NUMBER_ID
 });
 
@@ -235,6 +235,7 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
   } catch (error) {
     console.error('❌ CRITICAL ERROR in webhook handler:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack available');
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
     
     // ALWAYS send 200 response to Meta even on error
     console.log('📤 Sending error response 200 to Meta (to prevent retries)');
@@ -268,6 +269,7 @@ async function processWhatsAppMessage(message: any) {
   } catch (error) {
     console.error(`❌ WhatsAppFlowService error:`, error);
     console.error(`❌ Error stack:`, error instanceof Error ? error.stack : 'No stack');
+    console.error(`❌ Error details:`, JSON.stringify(error, null, 2));
   }
 }
 
