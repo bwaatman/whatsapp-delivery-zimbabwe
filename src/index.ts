@@ -14,8 +14,10 @@ const whatsappFlowService = new WhatsAppFlowService();
 console.log('Environment variables loaded:');
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌');
-console.log('WHATSAPP_TOKEN:', process.env.WHATSAPP_TOKEN ? '✅' : '❌');
-console.log('WHATSAPP_PHONE_NUMBER_ID:', process.env.WHATSAPP_PHONE_NUMBER_ID ? '✅' : '❌');
+
+// FORCE WHATSAPP LOGS - Explicit check for Render environment variables
+console.log("WHATSAPP_TOKEN Status:", process.env.WHATSAPP_TOKEN ? "✅ Loaded" : "❌ MISSING");
+console.log("WHATSAPP_PHONE_NUMBER_ID Status:", process.env.WHATSAPP_PHONE_NUMBER_ID ? "✅ Loaded" : "❌ MISSING");
 
 // DIAGNOSTIC LOG: Verify WhatsApp environment variables
 console.log("Checking Environment Variables:", {
