@@ -16,13 +16,13 @@ console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌');
 
 // FORCE WHATSAPP LOGS - Explicit check for Render environment variables
-console.log("WHATSAPP_ACCESS_TOKEN Status:", process.env.WHATSAPP_ACCESS_TOKEN ? "✅ Loaded" : "❌ MISSING");
+console.log("WHATSAPP_TOKEN Status:", process.env.WHATSAPP_TOKEN ? "✅ Loaded" : "❌ MISSING");
 console.log("WHATSAPP_PHONE_NUMBER_ID Status:", process.env.WHATSAPP_PHONE_NUMBER_ID ? "✅ Loaded" : "❌ MISSING");
 
 // DIAGNOSTIC LOG: Verify WhatsApp environment variables
 console.log("Checking Environment Variables:", {
-  hasToken: !!process.env.WHATSAPP_ACCESS_TOKEN,
-  tokenLength: process.env.WHATSAPP_ACCESS_TOKEN?.length,
+  hasToken: !!process.env.WHATSAPP_TOKEN,
+  tokenLength: process.env.WHATSAPP_TOKEN?.length,
   phoneId: process.env.WHATSAPP_PHONE_NUMBER_ID
 });
 
