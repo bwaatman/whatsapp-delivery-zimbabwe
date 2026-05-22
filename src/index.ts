@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 import { runHealthCheck } from './health-check';
 import { WhatsAppFlowService } from './WhatsAppFlowService';
 
-// Load environment variables
-dotenv.config({ path: '.env' });
+// Load environment variables - read system env vars first, then .env file
+dotenv.config();
 
 // Initialize flow service
 const whatsappFlowService = new WhatsAppFlowService();
@@ -14,6 +14,8 @@ const whatsappFlowService = new WhatsAppFlowService();
 console.log('Environment variables loaded:');
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌');
+console.log('WHATSAPP_TOKEN:', process.env.WHATSAPP_TOKEN ? '✅' : '❌');
+console.log('WHATSAPP_PHONE_NUMBER_ID:', process.env.WHATSAPP_PHONE_NUMBER_ID ? '✅' : '❌');
 
 // DIAGNOSTIC LOG: Verify WhatsApp environment variables
 console.log("Checking Environment Variables:", {
