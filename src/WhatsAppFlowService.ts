@@ -418,22 +418,16 @@ export class WhatsAppFlowService {
     console.log('💬 CASE 3: Pending order - text message received...');
 
     try {
-      // Defensive: Validate message structure
-      if (!message || !message.text || !message.text.body) {
-        console.error('❌ Invalid message structure in handlePendingOrderTextFlow');
+      // Defensive: Validate message structure - USE NORMALIZED STRUCTURE
+      const textContent = message.originalText || message.normalizedIntent || message.text?.body;
+      
+      if (!textContent || typeof textContent !== 'string' || textContent.trim().length === 0) {
+        console.error('❌ Invalid or empty message content in handlePendingOrderTextFlow');
+        console.error('🔍 Message structure:', JSON.stringify(message, null, 2));
         await this.sendFallbackMessage(from, "Sorry, I couldn't understand your message. Please try again.");
         return;
       }
-
-      const textContent = message.text.body;
       console.log(`📝 Order details received: "${textContent}"`);
-
-      // Defensive: Validate text content
-      if (!textContent || typeof textContent !== 'string' || textContent.trim().length === 0) {
-        console.error('❌ Empty or invalid text content');
-        await this.sendFallbackMessage(from, "Please provide some text for your order details.");
-        return;
-      }
 
       // Defensive: Validate order ID
       if (!activeOrder.id) {
