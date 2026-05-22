@@ -29,56 +29,32 @@ export class WhatsAppService {
 
   constructor() {
     this.phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
-    this.accessToken = process.env.WHATSAPP_ACCESS_TOKEN || '';
+    this.accessToken = process.env.WHATSAPP_TOKEN || '';
     this.baseUrl = 'https://graph.facebook.com/v25.0';
 
     if (!this.phoneNumberId || !this.accessToken) {
       console.log('⚠️ WhatsApp credentials not found in environment variables');
       console.log('WHATSAPP_PHONE_NUMBER_ID:', this.phoneNumberId ? '✅' : '❌');
-      console.log('WHATSAPP_ACCESS_TOKEN:', this.accessToken ? '✅' : '❌');
+      console.log('WHATSAPP_TOKEN:', this.accessToken ? '✅' : '❌');
     }
   }
 
   async sendTextMessage(to: string, message: string): Promise<boolean> {
     try {
       console.log('📤 Sending WhatsApp message...');
-      console.log('📱 Incoming from webhook (raw):', to);
-      console.log('📱 Outbound to (raw):', to);
-      
-      // Normalize phone number to E.164 format
-      let normalizedNumber = to;
-      console.log('🔍 Normalization steps:');
-      console.log('  - Original:', to);
-      
-      // Remove all non-digit characters first
-      normalizedNumber = normalizedNumber.replace(/[^\d]/g, '');
-      console.log('  - After removing non-digits:', normalizedNumber);
-      
-      // Remove leading zeros
-      if (normalizedNumber.startsWith('0')) {
-        normalizedNumber = normalizedNumber.substring(1);
-        console.log('  - After removing leading zero:', normalizedNumber);
-      }
-      
-      // Ensure country code (27 for South Africa)
-      if (!normalizedNumber.startsWith('27')) {
-        normalizedNumber = '27' + normalizedNumber;
-        console.log('  - After adding country code:', normalizedNumber);
-      }
-      
-      console.log('📱 Final normalized number:', normalizedNumber);
-      console.log('📱 Approved test recipient (from config):', process.env.TEST_PHONE_NUMBER || 'Not configured');
+      console.log('To:', to);
+      console.log('Message:', message);
 
       const payload: WhatsAppMessage = {
         messaging_product: 'whatsapp',
-        to: normalizedNumber,
+        to: to.replace(/[^\d]/g, ''), // Remove non-digits
         text: {
           body: message
         },
         type: 'text'
       };
 
-      console.log('📋 Outbound payload to Meta:', JSON.stringify(payload, null, 2));
+      console.log('📋 Payload:', JSON.stringify(payload, null, 2));
 
       const url = `${this.baseUrl}/${this.phoneNumberId}/messages`;
       const headers = {

@@ -15,6 +15,13 @@ console.log('Environment variables loaded:');
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅' : '❌');
 
+// DIAGNOSTIC LOG: Verify WhatsApp environment variables
+console.log("Checking Environment Variables:", {
+  hasToken: !!process.env.WHATSAPP_TOKEN,
+  tokenLength: process.env.WHATSAPP_TOKEN?.length,
+  phoneId: process.env.WHATSAPP_PHONE_NUMBER_ID
+});
+
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
