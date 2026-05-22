@@ -199,24 +199,36 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
                 hasList: !!normalizedMessage.listReply
               });
               
-              // Process all messages in the array with normalized data
+              // Process all messages in the array with normalized data ASYNCHRONOUSLY
               const messages = value?.messages || [];
               console.log('📨 Total Messages Count:', messages.length);
               
-              for (const msg of messages) {
-                // Enhance each message with normalized intent
-                const enhancedMsg = {
-                  ...msg,
-                  normalizedIntent: userIntent,
-                  originalText: textBody,
-                  buttonReply: buttonReply,
-                  listReply: listReply,
-                  locationData: locationData
-                };
-                
-                console.log('🔄 Processing enhanced message:', enhancedMsg.id);
-                await processWhatsAppMessage(enhancedMsg);
-              }
+              // Send 200 response immediately, then process messages in background
+              res.status(200).send('EVENT_RECEIVED');
+              
+              // Process messages asynchronously to avoid timeout
+              setImmediate(async () => {
+                for (const msg of messages) {
+                  try {
+                    // Enhance each message with normalized intent
+                    const enhancedMsg = {
+                      ...msg,
+                      normalizedIntent: userIntent,
+                      originalText: textBody,
+                      buttonReply: buttonReply,
+                      listReply: listReply,
+                      locationData: locationData
+                    };
+                    
+                    console.log('🔄 Processing enhanced message:', enhancedMsg.id);
+                    await processWhatsAppMessage(enhancedMsg);
+                  } catch (msgError) {
+                    console.error('❌ Error processing message:', msgError);
+                  }
+                }
+              });
+              
+              return; // Exit early since response already sent
             } else {
               console.log('❌ No messageData found in value.messages[0]');
               console.log('🔍 Debug - value:', JSON.stringify(value, null, 2));
@@ -228,10 +240,8 @@ app.post('/api/whatsapp/webhook', async (req, res) => {
       }
     } else {
       console.log('❌ Not a WhatsApp Business Account object:', data.object);
+      res.status(200).send('EVENT_RECEIVED');
     }
-
-    console.log('✅ Webhook processing completed - sending 200 response');
-    res.status(200).send('EVENT_RECEIVED');
   } catch (error) {
     console.error('❌ CRITICAL ERROR in webhook handler:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack available');
