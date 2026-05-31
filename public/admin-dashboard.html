@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - ZimDelivery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            color: #333;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .section {
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #218838;
+        }
+
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #c82333;
+        }
+
+        .btn-refresh {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background: #5568d3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state p {
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚚 Admin Dashboard</h1>
+            <p>ZimDelivery 5-Party Ecosystem Management</p>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Active Admins</h3>
+                <div class="number" id="active-admins">-</div>
+                <div class="label">System administrators</div>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Vendors</h3>
+                <div class="number" id="pending-vendors">-</div>
+                <div class="label">Awaiting approval</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Vendors</h3>
+                <div class="number" id="active-vendors">-</div>
+                <div class="label">Approved shops</div>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Drivers</h3>
+                <div class="number" id="pending-drivers">-</div>
+                <div class="label">Awaiting approval</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Drivers</h3>
+                <div class="number" id="active-drivers">-</div>
+                <div class="label">Available for delivery</div>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Orders</h3>
+                <div class="number" id="pending-orders">-</div>
+                <div class="label">Awaiting processing</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Deliveries</h3>
+                <div class="number" id="active-deliveries">-</div>
+                <div class="label">In transit</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Products</h3>
+                <div class="number" id="active-products">-</div>
+                <div class="label">Available items</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Pending Driver Registrations</h2>
+                <button class="btn btn-refresh" onclick="loadDashboard()">🔄 Refresh</button>
+            </div>
+            <div id="drivers-section">
+                <div class="loading">Loading driver registrations...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Pending Vendor Registrations</h2>
+            <div id="vendors-section">
+                <div class="loading">Loading vendor registrations...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>All Drivers</h2>
+                <button class="btn btn-refresh" onclick="loadAllDrivers()">🔄 Refresh</button>
+            </div>
+            <div id="all-drivers-section">
+                <div class="loading">Loading all drivers...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>All Vendors</h2>
+                <button class="btn btn-refresh" onclick="loadAllVendors()">🔄 Refresh</button>
+            </div>
+            <div id="all-vendors-section">
+                <div class="loading">Loading all vendors...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:10000/api';
+
+        async function loadDashboard() {
+            try {
+                // Load dashboard summary
+                const summaryResponse = await fetch(`${API_BASE}/admin/dashboard`);
+                const summary = await summaryResponse.json();
+                
+                document.getElementById('active-admins').textContent = summary.active_admins;
+                document.getElementById('pending-vendors').textContent = summary.pending_vendors;
+                document.getElementById('active-vendors').textContent = summary.active_vendors;
+                document.getElementById('pending-drivers').textContent = summary.pending_drivers;
+                document.getElementById('active-drivers').textContent = summary.active_drivers;
+                document.getElementById('pending-orders').textContent = summary.pending_orders;
+                document.getElementById('active-deliveries').textContent = summary.active_deliveries;
+                document.getElementById('active-products').textContent = summary.active_products;
+
+                // Load pending driver registrations
+                await loadDriverRegistrations();
+                
+                // Load pending vendor registrations
+                await loadVendorRegistrations();
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('drivers-section').innerHTML = 
+                    '<div class="error">Error loading dashboard data. Please make sure the server is running.</div>';
+            }
+        }
+
+        async function loadDriverRegistrations() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/driver-registrations/pending`);
+                const registrations = await response.json();
+                
+                if (registrations.length === 0) {
+                    document.getElementById('drivers-section').innerHTML = 
+                        '<div class="empty-state"><p>🎉 No pending driver registrations</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                
+                registrations.forEach(registration => {
+                    html += `
+                        <tr>
+                            <td>${registration.full_name}</td>
+                            <td>${registration.phone}</td>
+                            <td><span class="status-badge status-pending">Pending</span></td>
+                            <td>
+                                <button class="btn btn-approve" onclick="approveDriver('${registration.id}')">Approve</button>
+                                <button class="btn btn-reject" onclick="rejectDriver('${registration.id}')">Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('drivers-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading drivers:', error);
+                document.getElementById('drivers-section').innerHTML = 
+                    '<div class="error">Error loading driver registrations</div>';
+            }
+        }
+
+        async function loadVendorRegistrations() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/vendor-registrations/pending`);
+                const registrations = await response.json();
+                
+                if (registrations.length === 0) {
+                    document.getElementById('vendors-section').innerHTML = 
+                        '<div class="empty-state"><p>🎉 No pending vendor registrations</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                
+                registrations.forEach(registration => {
+                    html += `
+                        <tr>
+                            <td>${registration.business_name}</td>
+                            <td>${registration.business_phone}</td>
+                            <td><span class="status-badge status-pending">Pending</span></td>
+                            <td>
+                                <button class="btn btn-approve" onclick="approveVendor('${registration.id}')">Approve</button>
+                                <button class="btn btn-reject" onclick="rejectVendor('${registration.id}')">Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('vendors-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading vendors:', error);
+                document.getElementById('vendors-section').innerHTML = 
+                    '<div class="error">Error loading vendor registrations</div>';
+            }
+        }
+
+        async function approveDriver(driverId) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/driver-registrations/${driverId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    alert('Driver approved successfully!');
+                    loadDashboard();
+                } else {
+                    alert('Failed to approve driver');
+                }
+            } catch (error) {
+                console.error('Error approving driver:', error);
+                alert('Error approving driver');
+            }
+        }
+
+        async function rejectDriver(driverId) {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/driver-registrations/${driverId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                
+                if (response.ok) {
+                    alert('Driver rejected successfully!');
+                    loadDashboard();
+                } else {
+                    alert('Failed to reject driver');
+                }
+            } catch (error) {
+                console.error('Error rejecting driver:', error);
+                alert('Error rejecting driver');
+            }
+        }
+
+        async function approveVendor(vendorId) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/vendor-registrations/${vendorId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    alert('Vendor approved successfully!');
+                    loadDashboard();
+                } else {
+                    alert('Failed to approve vendor');
+                }
+            } catch (error) {
+                console.error('Error approving vendor:', error);
+                alert('Error approving vendor');
+            }
+        }
+
+        async function rejectVendor(vendorId) {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/vendor-registrations/${vendorId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                
+                if (response.ok) {
+                    alert('Vendor rejected successfully!');
+                    loadDashboard();
+                } else {
+                    alert('Failed to reject vendor');
+                }
+            } catch (error) {
+                console.error('Error rejecting vendor:', error);
+                alert('Error rejecting vendor');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        async function loadAllDrivers() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/drivers`);
+                const drivers = await response.json();
+                
+                if (drivers.length === 0) {
+                    document.getElementById('all-drivers-section').innerHTML = 
+                        '<div class="empty-state"><p>No drivers found</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Available</th><th>License</th></tr></thead><tbody>';
+                
+                drivers.forEach(driver => {
+                    html += `
+                        <tr>
+                            <td>${driver.name}</td>
+                            <td>${driver.phone}</td>
+                            <td><span class="status-badge status-${driver.registration_status === 'approved' ? 'approved' : 'pending'}">${driver.registration_status}</span></td>
+                            <td>${driver.is_available ? '✅' : '❌'}</td>
+                            <td>${driver.driver_license_number || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('all-drivers-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading drivers:', error);
+                document.getElementById('all-drivers-section').innerHTML = 
+                    '<div class="error">Error loading drivers</div>';
+            }
+        }
+
+        async function loadAllVendors() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/vendors`);
+                const vendors = await response.json();
+                
+                if (vendors.length === 0) {
+                    document.getElementById('all-vendors-section').innerHTML = 
+                        '<div class="empty-state"><p>No vendors found</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Business Name</th><th>Phone</th><th>Status</th><th>Active</th><th>License</th></tr></thead><tbody>';
+                
+                vendors.forEach(vendor => {
+                    html += `
+                        <tr>
+                            <td>${vendor.name || vendor.shop_name}</td>
+                            <td>${vendor.contact_phone || vendor.phone}</td>
+                            <td><span class="status-badge status-${vendor.registration_status === 'approved' ? 'approved' : 'pending'}">${vendor.registration_status}</span></td>
+                            <td>${vendor.active ? '✅' : '❌'}</td>
+                            <td>${vendor.business_license_number || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('all-vendors-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading vendors:', error);
+                document.getElementById('all-vendors-section').innerHTML = 
+                    '<div class="error">Error loading vendors</div>';
+            }
+        }
+
+        // Load dashboard on page load
+        loadDashboard();
+        
+        // Load all drivers and vendors
+        loadAllDrivers();
+        loadAllVendors();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

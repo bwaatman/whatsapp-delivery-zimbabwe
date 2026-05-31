@@ -1,0 +1,695 @@
+import { supabase } from './database';
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  password_hash: string;
+  name: string;
+  role: 'admin' | 'super_admin';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorRegistrationRequest {
+  id: string;
+  merchant_id: string;
+  business_name: string;
+  business_address: string;
+  business_phone: string;
+  business_email: string;
+  business_license_number: string;
+  tax_id: string;
+  business_description: string;
+  operating_hours: any;
+  shop_location?: string;
+  shop_address: string;
+  registration_data: any;
+  status: 'pending' | 'approved' | 'rejected' | 'under_review';
+  reviewed_by?: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DriverRegistrationRequest {
+  id: string;
+  driver_id: string;
+  full_name: string;
+  phone: string;
+  email?: string;
+  driver_license_number: string;
+  vehicle_type: string;
+  vehicle_registration: string;
+  vehicle_color: string;
+  home_address: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  registration_data: any;
+  status: 'pending' | 'approved' | 'rejected' | 'under_review';
+  reviewed_by?: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminDashboardSummary {
+  active_admins: number;
+  pending_vendors: number;
+  active_vendors: number;
+  pending_drivers: number;
+  active_drivers: number;
+  pending_orders: number;
+  active_deliveries: number;
+  active_products: number;
+}
+
+export class AdminService {
+  async createAdminUser(email: string, passwordHash: string, name: string, role: 'admin' | 'super_admin' = 'admin'): Promise<AdminUser | null> {
+    try {
+      console.log('👤 Creating new admin user...');
+
+      const { data, error } = await supabase
+        .from('admin_users')
+        .insert({
+          email: email,
+          password_hash: passwordHash,
+          name: name,
+          role: role,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error creating admin user:', error);
+        return null;
+      }
+
+      console.log('✅ Admin user created successfully');
+      return data as AdminUser;
+    } catch (error) {
+      console.error('❌ Exception in createAdminUser:', error);
+      return null;
+    }
+  }
+
+  async getAdminUserById(adminId: string): Promise<AdminUser | null> {
+    try {
+      console.log('👤 Getting admin user by ID:', adminId);
+
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', adminId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error getting admin user:', error);
+        return null;
+      }
+
+      console.log('✅ Admin user retrieved successfully');
+      return data as AdminUser;
+    } catch (error) {
+      console.error('❌ Exception in getAdminUserById:', error);
+      return null;
+    }
+  }
+
+  async getAdminUserByEmail(email: string): Promise<AdminUser | null> {
+    try {
+      console.log('👤 Getting admin user by email:', email);
+
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error) {
+        console.error('❌ Error getting admin user by email:', error);
+        return null;
+      }
+
+      console.log('✅ Admin user retrieved successfully');
+      return data as AdminUser;
+    } catch (error) {
+      console.error('❌ Exception in getAdminUserByEmail:', error);
+      return null;
+    }
+  }
+
+  async getAllAdminUsers(): Promise<AdminUser[]> {
+    try {
+      console.log('👥 Getting all admin users...');
+
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error getting admin users:', error);
+        return [];
+      }
+
+      console.log(`✅ Retrieved ${data.length} admin users`);
+      return data as AdminUser[];
+    } catch (error) {
+      console.error('❌ Exception in getAllAdminUsers:', error);
+      return [];
+    }
+  }
+
+  async getPendingVendorRegistrations(): Promise<VendorRegistrationRequest[]> {
+    try {
+      console.log('📋 Getting pending vendor registrations...');
+
+      const { data, error } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error getting pending vendor registrations:', error);
+        return [];
+      }
+
+      console.log(`✅ Retrieved ${data.length} pending vendor registrations`);
+      return data as VendorRegistrationRequest[];
+    } catch (error) {
+      console.error('❌ Exception in getPendingVendorRegistrations:', error);
+      return [];
+    }
+  }
+
+  async getPendingDriverRegistrations(): Promise<DriverRegistrationRequest[]> {
+    try {
+      console.log('📋 Getting pending driver registrations...');
+
+      const { data, error } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error getting pending driver registrations:', error);
+        return [];
+      }
+
+      console.log(`✅ Retrieved ${data.length} pending driver registrations`);
+      return data as DriverRegistrationRequest[];
+    } catch (error) {
+      console.error('❌ Exception in getPendingDriverRegistrations:', error);
+      return [];
+    }
+  }
+
+  async approveVendorRegistration(requestId: string, adminId?: string): Promise<boolean> {
+    try {
+      console.log('✅ Approving vendor registration:', requestId);
+
+      // First, get the registration request to find the merchant_id
+      const { data: registration, error: regError } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting vendor registration:', regError);
+        return false;
+      }
+
+      // Update the registration request status
+      const { error: updateRegError } = await supabase
+        .from('vendor_registration_requests')
+        .update({
+          status: 'approved',
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update the merchant status
+      const { error: updateMerchantError } = await supabase
+        .from('merchants')
+        .update({
+          registration_status: 'approved',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString(),
+          active: true,
+          password: registration.password || null
+        })
+        .eq('id', registration.merchant_id);
+
+      if (updateMerchantError) {
+        console.error('❌ Error updating merchant:', updateMerchantError);
+        return false;
+      }
+
+      console.log('✅ Vendor registration approved successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in approveVendorRegistration:', error);
+      return false;
+    }
+  }
+
+  async rejectVendorRegistration(requestId: string, adminId?: string, reason?: string): Promise<boolean> {
+    try {
+      console.log('❌ Rejecting vendor registration:', requestId);
+
+      // First, get the registration request to find the merchant_id
+      const { data: registration, error: regError } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting vendor registration:', regError);
+        return false;
+      }
+
+      // Update the registration request status
+      const { error: updateRegError } = await supabase
+        .from('vendor_registration_requests')
+        .update({
+          status: 'rejected',
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: reason || null
+        })
+        .eq('id', requestId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update the merchant status
+      const { error: updateMerchantError } = await supabase
+        .from('merchants')
+        .update({
+          registration_status: 'rejected',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString(),
+          rejection_reason: reason || null,
+          active: false
+        })
+        .eq('id', registration.merchant_id);
+
+      if (updateMerchantError) {
+        console.error('❌ Error updating merchant:', updateMerchantError);
+        return false;
+      }
+
+      console.log('✅ Vendor registration rejected successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in rejectVendorRegistration:', error);
+      return false;
+    }
+  }
+
+  async approveDriverRegistration(requestId: string, adminId?: string): Promise<boolean> {
+    try {
+      console.log('✅ Approving driver registration:', requestId);
+
+      // First, get the registration request to find the driver_id
+      const { data: registration, error: regError } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting driver registration:', regError);
+        return false;
+      }
+
+      // Update the registration request status
+      const { error: updateRegError } = await supabase
+        .from('driver_registration_requests')
+        .update({
+          status: 'approved',
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update the driver status
+      const { error: updateDriverError } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'approved',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString(),
+          is_available: true,
+          password: registration.password || null
+        })
+        .eq('id', registration.driver_id);
+
+      if (updateDriverError) {
+        console.error('❌ Error updating driver:', updateDriverError);
+        return false;
+      }
+
+      console.log('✅ Driver registration approved successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in approveDriverRegistration:', error);
+      return false;
+    }
+  }
+
+  async rejectDriverRegistration(requestId: string, adminId?: string, reason?: string): Promise<boolean> {
+    try {
+      console.log('❌ Rejecting driver registration:', requestId);
+
+      // First, get the registration request to find the driver_id
+      const { data: registration, error: regError } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting driver registration:', regError);
+        return false;
+      }
+
+      // Update the registration request status
+      const { error: updateRegError } = await supabase
+        .from('driver_registration_requests')
+        .update({
+          status: 'rejected',
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: reason || null
+        })
+        .eq('id', requestId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update the driver status
+      const { error: updateDriverError } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'rejected',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString(),
+          rejection_reason: reason || null,
+          is_available: false
+        })
+        .eq('id', registration.driver_id);
+
+      if (updateDriverError) {
+        console.error('❌ Error updating driver:', updateDriverError);
+        return false;
+      }
+
+      console.log('✅ Driver registration rejected successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in rejectDriverRegistration:', error);
+      return false;
+    }
+  }
+
+  async getDashboardSummary(): Promise<AdminDashboardSummary | null> {
+    try {
+      console.log('📊 Getting admin dashboard summary...');
+
+      const { data, error } = await supabase
+        .from('admin_dashboard_summary')
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('❌ Error getting dashboard summary:', error);
+        return null;
+      }
+
+      console.log('✅ Dashboard summary retrieved successfully');
+      return data as AdminDashboardSummary;
+    } catch (error) {
+      console.error('❌ Exception in getDashboardSummary:', error);
+      return null;
+    }
+  }
+
+  async getAllVendors(): Promise<any[]> {
+    try {
+      console.log('🏪 Getting all vendors...');
+
+      const { data, error } = await supabase
+        .from('merchants')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error getting vendors:', error);
+        return [];
+      }
+
+      console.log(`✅ Retrieved ${data.length} vendors`);
+      return data;
+    } catch (error) {
+      console.error('❌ Exception in getAllVendors:', error);
+      return [];
+    }
+  }
+
+  async getAllDrivers(): Promise<any[]> {
+    try {
+      console.log('🚗 Getting all drivers...');
+
+      const { data, error } = await supabase
+        .from('drivers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error getting drivers:', error);
+        return [];
+      }
+
+      console.log(`✅ Retrieved ${data.length} drivers`);
+      return data;
+    } catch (error) {
+      console.error('❌ Exception in getAllDrivers:', error);
+      return [];
+    }
+  }
+
+  async suspendVendor(merchantId: string): Promise<boolean> {
+    try {
+      console.log('🔒 Suspending vendor:', merchantId);
+
+      const { data, error } = await supabase
+        .from('merchants')
+        .update({
+          registration_status: 'suspended',
+          active: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', merchantId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error suspending vendor:', error);
+        return false;
+      }
+
+      console.log('✅ Vendor suspended successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in suspendVendor:', error);
+      return false;
+    }
+  }
+
+  async activateVendor(merchantId: string): Promise<boolean> {
+    try {
+      console.log('✅ Activating vendor:', merchantId);
+
+      const { data, error } = await supabase
+        .from('merchants')
+        .update({
+          registration_status: 'approved',
+          active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', merchantId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error activating vendor:', error);
+        return false;
+      }
+
+      console.log('✅ Vendor activated successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in activateVendor:', error);
+      return false;
+    }
+  }
+
+  async suspendDriver(driverId: string): Promise<boolean> {
+    try {
+      console.log('🔒 Suspending driver:', driverId);
+
+      const { data, error } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'suspended',
+          is_available: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', driverId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error suspending driver:', error);
+        return false;
+      }
+
+      console.log('✅ Driver suspended successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in suspendDriver:', error);
+      return false;
+    }
+  }
+
+  async activateDriver(driverId: string): Promise<boolean> {
+    try {
+      console.log('✅ Activating driver:', driverId);
+
+      const { data, error } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'approved',
+          is_available: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', driverId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error activating driver:', error);
+        return false;
+      }
+
+      console.log('✅ Driver activated successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in activateDriver:', error);
+      return false;
+    }
+  }
+
+  async getAllOrders(): Promise<any[]> {
+    try {
+      console.log('📋 Getting all orders...');
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          merchants!inner (
+            name,
+            shop_address
+          ),
+          drivers!inner (
+            name,
+            phone
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('❌ Error getting orders:', error);
+        return [];
+      }
+
+      console.log(`✅ Retrieved ${data.length} orders`);
+      return data;
+    } catch (error) {
+      console.error('❌ Exception in getAllOrders:', error);
+      return [];
+    }
+  }
+
+  async getVendorRegistrationDetails(requestId: string): Promise<VendorRegistrationRequest | null> {
+    try {
+      console.log('📋 Getting vendor registration details:', requestId);
+
+      const { data, error } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error getting vendor registration details:', error);
+        return null;
+      }
+
+      console.log('✅ Vendor registration details retrieved successfully');
+      return data as VendorRegistrationRequest;
+    } catch (error) {
+      console.error('❌ Exception in getVendorRegistrationDetails:', error);
+      return null;
+    }
+  }
+
+  async getDriverRegistrationDetails(requestId: string): Promise<DriverRegistrationRequest | null> {
+    try {
+      console.log('📋 Getting driver registration details:', requestId);
+
+      const { data, error } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error getting driver registration details:', error);
+        return null;
+      }
+
+      console.log('✅ Driver registration details retrieved successfully');
+      return data as DriverRegistrationRequest;
+    } catch (error) {
+      console.error('❌ Exception in getDriverRegistrationDetails:', error);
+      return null;
+    }
+  }
+}

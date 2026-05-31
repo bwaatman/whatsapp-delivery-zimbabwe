@@ -1,0 +1,5 @@
+2026/05/29-09:31:58.452 45f0 Creating DB C:\Users\nkomo\CascadeProjects\.wwebjs_auth\session-whatsapp-delivery-zimbabwe\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb since it was missing.
+2026/05/29-09:31:58.456 45f0 Reusing MANIFEST C:\Users\nkomo\CascadeProjects\.wwebjs_auth\session-whatsapp-delivery-zimbabwe\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/05/29-10:46:44.183 45f0 Level-0 table #5: started
+2026/05/29-10:46:44.212 45f0 Level-0 table #5: 1109946 bytes OK
+2026/05/29-10:46:44.214 45f0 Delete type=0 #3
