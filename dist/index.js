@@ -97,6 +97,34 @@ app.get('/vendor-register', (req, res) => {
 });
 // Also serve static files for direct access
 app.use(express_1.default.static(publicPath));
+// Catch-all route for SPA-like behavior - serve index.html for unknown routes
+app.get('*', (req, res) => {
+    // If it's an API route, return 404
+    if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+        return res.status(404).send('Not found');
+    }
+    // For dashboard routes, try to serve the appropriate HTML file
+    if (req.path === '/admin' || req.path.startsWith('/admin')) {
+        const filePath = path_1.default.join(publicPath, 'admin-dashboard.html');
+        if (fs_1.default.existsSync(filePath)) {
+            return res.sendFile(filePath);
+        }
+    }
+    else if (req.path === '/vendor' || req.path.startsWith('/vendor')) {
+        const filePath = path_1.default.join(publicPath, 'vendor-dashboard.html');
+        if (fs_1.default.existsSync(filePath)) {
+            return res.sendFile(filePath);
+        }
+    }
+    else if (req.path === '/driver' || req.path.startsWith('/driver')) {
+        const filePath = path_1.default.join(publicPath, 'driver-dashboard.html');
+        if (fs_1.default.existsSync(filePath)) {
+            return res.sendFile(filePath);
+        }
+    }
+    // Default to serving static files
+    res.status(404).send('Page not found');
+});
 // Serve WhatsApp QR code
 app.get('/whatsapp-qr', (req, res) => {
     const qrPath = path_1.default.join(publicPath, 'whatsapp-qr.png');
