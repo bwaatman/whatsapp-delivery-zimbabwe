@@ -368,4 +368,15 @@ router.get('/shop/:id/products/:productId', async (req: Request, res: Response) 
   }
 });
 
+// Get product variants
+router.get('/shop/:id/products/:productId/variants', async (req: Request, res: Response) => {
+  try {
+    const variants = await shopService.getProductVariants(getParam(req.params.productId));
+    res.json(variants);
+  } catch (error) {
+    console.error('Error getting product variants:', error);
+    res.status(500).json({ error: 'Failed to get product variants' });
+  }
+});
+
 export default router;

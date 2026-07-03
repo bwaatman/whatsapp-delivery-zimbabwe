@@ -71,6 +71,8 @@ export declare class AdminService {
     rejectVendorRegistration(requestId: string, adminId?: string, reason?: string): Promise<boolean>;
     approveDriverRegistration(requestId: string, adminId?: string): Promise<boolean>;
     rejectDriverRegistration(requestId: string, adminId?: string, reason?: string): Promise<boolean>;
+    approveDriverDirectly(driverId: string, adminId?: string): Promise<boolean>;
+    rejectDriverDirectly(driverId: string, adminId?: string, reason?: string): Promise<boolean>;
     getDashboardSummary(): Promise<AdminDashboardSummary | null>;
     getAllVendors(): Promise<any[]>;
     getAllDrivers(): Promise<any[]>;
@@ -81,5 +83,7 @@ export declare class AdminService {
     getAllOrders(): Promise<any[]>;
     getVendorRegistrationDetails(requestId: string): Promise<VendorRegistrationRequest | null>;
     getDriverRegistrationDetails(requestId: string): Promise<DriverRegistrationRequest | null>;
+    getVendorById(vendorId: string): Promise<any>;
+    getDriverById(driverId: string): Promise<any>;
 }
 //# sourceMappingURL=AdminService.d.ts.map

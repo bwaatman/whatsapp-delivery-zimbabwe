@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - ZimDelivery</title>
+    <script>
+        // Check authentication on page load
+        if (!localStorage.getItem('adminAuth') || localStorage.getItem('adminAuth') !== 'true') {
+            window.location.href = '/admin-login.html';
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -222,6 +228,45 @@
         .empty-state p {
             font-size: 1.1em;
         }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .profile-modal {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-modal h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+        }
+
+        .profile-modal p {
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .profile-modal strong {
+            color: #4a4a4a;
+        }
     </style>
 </head>
 <body>
@@ -311,15 +356,61 @@
                 <div class="loading">Loading all vendors...</div>
             </div>
         </div>
+
+        <div class="section">
+            <h2>💰 Payment Configuration</h2>
+            <div id="payment-config-section">
+                <div class="loading">Loading payment configuration...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>💰 Payout Management</h2>
+            <div id="payout-section">
+                <div class="loading">Loading payout information...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>💰 Debt Tracking</h2>
+            <div id="debt-section">
+                <div class="loading">Loading debt information...</div>
+            </div>
+        </div>
     </div>
 
     <script>
         const API_BASE = 'http://localhost:10000/api';
 
+        // Helper function to get auth headers
+        function getAuthHeaders() {
+            const token = localStorage.getItem('adminToken');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            };
+        }
+
+        function logout() {
+            localStorage.removeItem('adminAuth');
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin-login.html';
+        }
+
+        // Add logout button click handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', logout);
+            }
+        });
+
         async function loadDashboard() {
             try {
                 // Load dashboard summary
-                const summaryResponse = await fetch(`${API_BASE}/admin/dashboard`);
+                const summaryResponse = await fetch(`${API_BASE}/admin/dashboard`, {
+                    headers: getAuthHeaders()
+                });
                 const summary = await summaryResponse.json();
                 
                 document.getElementById('active-admins').textContent = summary.active_admins;
@@ -337,6 +428,15 @@
                 // Load pending vendor registrations
                 await loadVendorRegistrations();
 
+                // Load payment configuration
+                await loadPaymentConfig();
+
+                // Load payout information
+                await loadPayoutInfo();
+
+                // Load debt information
+                await loadDebtInfo();
+
             } catch (error) {
                 console.error('Error loading dashboard:', error);
                 document.getElementById('drivers-section').innerHTML = 
@@ -346,7 +446,9 @@
 
         async function loadDriverRegistrations() {
             try {
-                const response = await fetch(`${API_BASE}/admin/driver-registrations/pending`);
+                const response = await fetch(`${API_BASE}/admin/driver-registrations/pending`, {
+                    headers: getAuthHeaders()
+                });
                 const registrations = await response.json();
                 
                 if (registrations.length === 0) {
@@ -383,7 +485,9 @@
 
         async function loadVendorRegistrations() {
             try {
-                const response = await fetch(`${API_BASE}/admin/vendor-registrations/pending`);
+                const response = await fetch(`${API_BASE}/admin/vendor-registrations/pending`, {
+                    headers: getAuthHeaders()
+                });
                 const registrations = await response.json();
                 
                 if (registrations.length === 0) {
@@ -422,7 +526,7 @@
             try {
                 const response = await fetch(`${API_BASE}/admin/driver-registrations/${driverId}/approve`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({})
                 });
                 
@@ -445,7 +549,7 @@
             try {
                 const response = await fetch(`${API_BASE}/admin/driver-registrations/${driverId}/reject`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ reason })
                 });
                 
@@ -461,15 +565,120 @@
             }
         }
 
+        async function approveDriver(driverId) {
+            try {
+                // First, try to find the registration request ID for this driver
+                const response = await fetch(`${API_BASE}/admin/driver-registrations/pending`, {
+                    headers: getAuthHeaders()
+                });
+                const registrations = await response.json();
+                
+                const registration = registrations.find(reg => reg.driver_id === driverId);
+                
+                if (registration) {
+                    // Use the registration approval flow
+                    const approveResponse = await fetch(`${API_BASE}/admin/driver-registrations/${registration.id}/approve`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({})
+                    });
+                    
+                    if (approveResponse.ok) {
+                        alert('Driver approved successfully!');
+                        loadDashboard();
+                    } else {
+                        alert('Failed to approve driver');
+                    }
+                } else {
+                    // No registration request found, approve directly
+                    const approveResponse = await fetch(`${API_BASE}/admin/drivers/${driverId}/approve`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({})
+                    });
+                    
+                    if (approveResponse.ok) {
+                        alert('Driver approved successfully!');
+                        loadDashboard();
+                    } else {
+                        alert('Failed to approve driver');
+                    }
+                }
+            } catch (error) {
+                console.error('Error approving driver:', error);
+                alert('Error approving driver');
+            }
+        }
+
+        async function rejectDriver(driverId) {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+            
+            try {
+                // First, try to find the registration request ID for this driver
+                const response = await fetch(`${API_BASE}/admin/driver-registrations/pending`, {
+                    headers: getAuthHeaders()
+                });
+                const registrations = await response.json();
+                
+                const registration = registrations.find(reg => reg.driver_id === driverId);
+                
+                if (registration) {
+                    // Use the registration rejection flow
+                    const rejectResponse = await fetch(`${API_BASE}/admin/driver-registrations/${registration.id}/reject`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ reason })
+                    });
+                    
+                    if (rejectResponse.ok) {
+                        alert('Driver rejected successfully!');
+                        loadDashboard();
+                    } else {
+                        alert('Failed to reject driver');
+                    }
+                } else {
+                    // No registration request found, reject directly
+                    const rejectResponse = await fetch(`${API_BASE}/admin/drivers/${driverId}/reject`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ reason })
+                    });
+                    
+                    if (rejectResponse.ok) {
+                        alert('Driver rejected successfully!');
+                        loadDashboard();
+                    } else {
+                        alert('Failed to reject driver');
+                    }
+                }
+            } catch (error) {
+                console.error('Error rejecting driver:', error);
+                alert('Error rejecting driver');
+            }
+        }
+
         async function approveVendor(vendorId) {
             try {
-                const response = await fetch(`${API_BASE}/admin/vendor-registrations/${vendorId}/approve`, {
+                // First, find the registration request ID for this vendor
+                const response = await fetch(`${API_BASE}/admin/vendor-registrations/pending`, {
+                    headers: getAuthHeaders()
+                });
+                const registrations = await response.json();
+                
+                const registration = registrations.find(reg => reg.merchant_id === vendorId);
+                if (!registration) {
+                    alert('No pending registration found for this vendor');
+                    return;
+                }
+                
+                const approveResponse = await fetch(`${API_BASE}/admin/vendor-registrations/${registration.id}/approve`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({})
                 });
                 
-                if (response.ok) {
+                if (approveResponse.ok) {
                     alert('Vendor approved successfully!');
                     loadDashboard();
                 } else {
@@ -486,13 +695,25 @@
             if (!reason) return;
             
             try {
-                const response = await fetch(`${API_BASE}/admin/vendor-registrations/${vendorId}/reject`, {
+                // First, find the registration request ID for this vendor
+                const response = await fetch(`${API_BASE}/admin/vendor-registrations/pending`, {
+                    headers: getAuthHeaders()
+                });
+                const registrations = await response.json();
+                
+                const registration = registrations.find(reg => reg.merchant_id === vendorId);
+                if (!registration) {
+                    alert('No pending registration found for this vendor');
+                    return;
+                }
+                
+                const rejectResponse = await fetch(`${API_BASE}/admin/vendor-registrations/${registration.id}/reject`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ reason })
                 });
                 
-                if (response.ok) {
+                if (rejectResponse.ok) {
                     alert('Vendor rejected successfully!');
                     loadDashboard();
                 } else {
@@ -510,9 +731,138 @@
             window.location.href = '/login';
         }
 
+        async function viewDriverProfile(driverId) {
+            try {
+                console.log('Fetching driver profile for ID:', driverId);
+                const response = await fetch(`${API_BASE}/admin/drivers/${driverId}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) {
+                    console.error('Error response:', response.status, response.statusText);
+                    const errorData = await response.json();
+                    console.error('Error data:', errorData);
+                    alert('Error loading driver profile: ' + (errorData.error || 'Unknown error'));
+                    return;
+                }
+                
+                const driver = await response.json();
+                console.log('Driver profile data:', driver);
+                
+                // Fetch category name if category_id exists
+                let categoryName = 'Not set';
+                if (driver.category_id) {
+                    try {
+                        const categoryResponse = await fetch(`${API_BASE}/categories/${driver.category_id}`);
+                        const category = await categoryResponse.json();
+                        categoryName = category.name || 'Not set';
+                    } catch (error) {
+                        console.error('Error fetching category:', error);
+                    }
+                }
+                
+                const profileInfo = `
+                    <div class="profile-modal">
+                        <h3>Driver Profile</h3>
+                        <p><strong>Name:</strong> ${driver.name || driver.full_name || 'N/A'}</p>
+                        <p><strong>Phone:</strong> ${driver.phone || 'N/A'}</p>
+                        <p><strong>Status:</strong> ${driver.registration_status || 'N/A'}</p>
+                        <p><strong>Available:</strong> ${driver.is_available ? 'Yes' : 'No'}</p>
+                        <p><strong>License Number:</strong> ${driver.driver_license_number || 'N/A'}</p>
+                        <p><strong>Vehicle Type:</strong> ${driver.vehicle_type || 'N/A'}</p>
+                        <p><strong>Vehicle Registration:</strong> ${driver.vehicle_registration || 'N/A'}</p>
+                        <p><strong>Vehicle Color:</strong> ${driver.vehicle_color || 'N/A'}</p>
+                        <p><strong>Home Address:</strong> ${driver.home_address || 'N/A'}</p>
+                        <p><strong>Emergency Contact:</strong> ${driver.emergency_contact_name || 'N/A'} (${driver.emergency_contact_phone || 'N/A'})</p>
+                        <p><strong>Category:</strong> ${categoryName}</p>
+                        <p><strong>Created:</strong> ${driver.created_at ? new Date(driver.created_at).toLocaleString() : 'N/A'}</p>
+                        <button class="btn btn-reject" onclick="closeProfileModal()">Close</button>
+                    </div>
+                `;
+                
+                // Create modal if it doesn't exist
+                let modal = document.getElementById('profile-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'profile-modal';
+                    modal.className = 'modal-overlay';
+                    document.body.appendChild(modal);
+                }
+                
+                modal.innerHTML = profileInfo;
+                modal.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading driver profile:', error);
+                alert('Error loading driver profile');
+            }
+        }
+
+        async function viewVendorProfile(vendorId) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/vendors/${vendorId}`);
+                const vendor = await response.json();
+                
+                // Fetch category name if category_id exists
+                let categoryName = 'Not set';
+                if (vendor.category_id) {
+                    try {
+                        const categoryResponse = await fetch(`${API_BASE}/categories/${vendor.category_id}`);
+                        const category = await categoryResponse.json();
+                        categoryName = category.name || 'Not set';
+                    } catch (error) {
+                        console.error('Error fetching category:', error);
+                    }
+                }
+                
+                const profileInfo = `
+                    <div class="profile-modal">
+                        <h3>Vendor Profile</h3>
+                        <p><strong>Business Name:</strong> ${vendor.name || vendor.shop_name}</p>
+                        <p><strong>Phone:</strong> ${vendor.contact_phone || vendor.phone}</p>
+                        <p><strong>Status:</strong> ${vendor.registration_status}</p>
+                        <p><strong>Active:</strong> ${vendor.active ? 'Yes' : 'No'}</p>
+                        <p><strong>Business Address:</strong> ${vendor.shop_address || 'N/A'}</p>
+                        <p><strong>Business License:</strong> ${vendor.business_license_number || 'N/A'}</p>
+                        <p><strong>Tax ID:</strong> ${vendor.tax_id || 'N/A'}</p>
+                        <p><strong>Description:</strong> ${vendor.business_description || 'N/A'}</p>
+                        <p><strong>Operating Hours:</strong> ${vendor.operating_hours ? JSON.stringify(vendor.operating_hours) : 'N/A'}</p>
+                        <p><strong>Category:</strong> ${categoryName}</p>
+                        <p><strong>Created:</strong> ${new Date(vendor.created_at).toLocaleString()}</p>
+                        <button class="btn btn-reject" onclick="closeProfileModal()">Close</button>
+                    </div>
+                `;
+                
+                // Create modal if it doesn't exist
+                let modal = document.getElementById('profile-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'profile-modal';
+                    modal.className = 'modal-overlay';
+                    document.body.appendChild(modal);
+                }
+                
+                modal.innerHTML = profileInfo;
+                modal.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading vendor profile:', error);
+                alert('Error loading vendor profile');
+            }
+        }
+
+        function closeProfileModal() {
+            const modal = document.getElementById('profile-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
         async function loadAllDrivers() {
             try {
-                const response = await fetch(`${API_BASE}/admin/drivers`);
+                const response = await fetch(`${API_BASE}/admin/drivers`, {
+                    headers: getAuthHeaders()
+                });
                 const drivers = await response.json();
                 
                 if (drivers.length === 0) {
@@ -521,9 +871,10 @@
                     return;
                 }
 
-                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Available</th><th>License</th></tr></thead><tbody>';
+                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Available</th><th>License</th><th>Actions</th></tr></thead><tbody>';
                 
                 drivers.forEach(driver => {
+                    const isPending = driver.registration_status === 'pending';
                     html += `
                         <tr>
                             <td>${driver.name}</td>
@@ -531,6 +882,13 @@
                             <td><span class="status-badge status-${driver.registration_status === 'approved' ? 'approved' : 'pending'}">${driver.registration_status}</span></td>
                             <td>${driver.is_available ? '✅' : '❌'}</td>
                             <td>${driver.driver_license_number || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-refresh" onclick="viewDriverProfile('${driver.id}')">View Profile</button>
+                                ${isPending ? `
+                                    <button class="btn btn-approve" onclick="approveDriver('${driver.id}')">Approve</button>
+                                    <button class="btn btn-reject" onclick="rejectDriver('${driver.id}')">Reject</button>
+                                ` : ''}
+                            </td>
                         </tr>
                     `;
                 });
@@ -547,7 +905,9 @@
 
         async function loadAllVendors() {
             try {
-                const response = await fetch(`${API_BASE}/admin/vendors`);
+                const response = await fetch(`${API_BASE}/admin/vendors`, {
+                    headers: getAuthHeaders()
+                });
                 const vendors = await response.json();
                 
                 if (vendors.length === 0) {
@@ -556,9 +916,10 @@
                     return;
                 }
 
-                let html = '<div class="table-container"><table><thead><tr><th>Business Name</th><th>Phone</th><th>Status</th><th>Active</th><th>License</th></tr></thead><tbody>';
+                let html = '<div class="table-container"><table><thead><tr><th>Business Name</th><th>Phone</th><th>Status</th><th>Active</th><th>License</th><th>Actions</th></tr></thead><tbody>';
                 
                 vendors.forEach(vendor => {
+                    const isPending = vendor.registration_status === 'pending';
                     html += `
                         <tr>
                             <td>${vendor.name || vendor.shop_name}</td>
@@ -566,6 +927,13 @@
                             <td><span class="status-badge status-${vendor.registration_status === 'approved' ? 'approved' : 'pending'}">${vendor.registration_status}</span></td>
                             <td>${vendor.active ? '✅' : '❌'}</td>
                             <td>${vendor.business_license_number || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-refresh" onclick="viewVendorProfile('${vendor.id}')">View Profile</button>
+                                ${isPending ? `
+                                    <button class="btn btn-approve" onclick="approveVendor('${vendor.id}')">Approve</button>
+                                    <button class="btn btn-reject" onclick="rejectVendor('${vendor.id}')">Reject</button>
+                                ` : ''}
+                            </td>
                         </tr>
                     `;
                 });
@@ -577,6 +945,295 @@
                 console.error('Error loading vendors:', error);
                 document.getElementById('all-vendors-section').innerHTML = 
                     '<div class="error">Error loading vendors</div>';
+            }
+        }
+
+        async function loadPaymentConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/config/platform`, {
+                    headers: getAuthHeaders()
+                });
+                const config = await response.json();
+                
+                let html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Setting</th>
+                                    <th>Current Value</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Vendor Commission Rate</td>
+                                    <td>${config.vendor_commission_rate}%</td>
+                                    <td>Percentage charged to vendors per order</td>
+                                    <td>
+                                        <input type="number" id="vendor-commission-input" value="${config.vendor_commission_rate}" min="0" max="100" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateConfig('vendor_commission_rate')">Update</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Driver Delivery Rate</td>
+                                    <td>${config.driver_delivery_rate}%</td>
+                                    <td>Percentage of delivery fee given to drivers</td>
+                                    <td>
+                                        <input type="number" id="driver-delivery-input" value="${config.driver_delivery_rate}" min="0" max="100" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateConfig('driver_delivery_rate')">Update</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Service Fee</td>
+                                    <td>R${config.service_fee}</td>
+                                    <td>Fixed service fee charged per order</td>
+                                    <td>
+                                        <input type="number" id="service-fee-input" value="${config.service_fee}" min="0" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateConfig('service_fee')">Update</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Minimum Payout Amount</td>
+                                    <td>R${config.min_payout_amount}</td>
+                                    <td>Minimum amount required for payout</td>
+                                    <td>
+                                        <input type="number" id="min-payout-input" value="${config.min_payout_amount}" min="0" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateConfig('min_payout_amount')">Update</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Payout Day</td>
+                                    <td>Day ${config.payout_day}</td>
+                                    <td>Day of week for payouts (1=Monday, 7=Sunday)</td>
+                                    <td>
+                                        <input type="number" id="payout-day-input" value="${config.payout_day}" min="1" max="7" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateConfig('payout_day')">Update</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('payment-config-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+                document.getElementById('payment-config-section').innerHTML = 
+                    '<div class="error">Error loading payment configuration</div>';
+            }
+        }
+
+        async function updateConfig(key) {
+            try {
+                let value;
+                switch(key) {
+                    case 'vendor_commission_rate':
+                        value = document.getElementById('vendor-commission-input').value;
+                        break;
+                    case 'driver_delivery_rate':
+                        value = document.getElementById('driver-delivery-input').value;
+                        break;
+                    case 'service_fee':
+                        value = document.getElementById('service-fee-input').value;
+                        break;
+                    case 'min_payout_amount':
+                        value = document.getElementById('min-payout-input').value;
+                        break;
+                    case 'payout_day':
+                        value = document.getElementById('payout-day-input').value;
+                        break;
+                }
+
+                const response = await fetch(`${API_BASE}/config/platform/${key}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ value })
+                });
+
+                if (response.ok) {
+                    alert('Configuration updated successfully');
+                    await loadPaymentConfig();
+                } else {
+                    alert('Failed to update configuration');
+                }
+            } catch (error) {
+                console.error('Error updating config:', error);
+                alert('Error updating configuration');
+            }
+        }
+
+        async function loadPayoutInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/payouts/batches/pending`, {
+                    headers: getAuthHeaders()
+                });
+                const batches = await response.json();
+                
+                if (batches.length === 0) {
+                    document.getElementById('payout-section').innerHTML = 
+                        '<div class="empty-state"><p>🎉 No pending payout batches</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Batch #</th><th>Period</th><th>Total Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                
+                batches.forEach(batch => {
+                    const startDate = new Date(batch.period_start).toLocaleDateString();
+                    const endDate = new Date(batch.period_end).toLocaleDateString();
+                    html += `
+                        <tr>
+                            <td>${batch.batch_number}</td>
+                            <td>${startDate} - ${endDate}</td>
+                            <td>R${batch.total_amount.toFixed(2)}</td>
+                            <td><span class="status-badge status-${batch.status}">${batch.status}</span></td>
+                            <td>
+                                <button class="btn btn-confirm" onclick="viewPayoutBatch('${batch.id}')">View Details</button>
+                                ${batch.status === 'pending' ? `<button class="btn btn-reject" onclick="cancelPayoutBatch('${batch.id}')">Cancel</button>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('payout-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading payout info:', error);
+                document.getElementById('payout-section').innerHTML = 
+                    '<div class="error">Error loading payout information</div>';
+            }
+        }
+
+        async function loadDebtInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/cash/debts/summary`, {
+                    headers: getAuthHeaders()
+                });
+                const summary = await response.json();
+                
+                let html = `
+                    <div class="stats-grid" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <h3>Total Debt</h3>
+                            <div class="number">R${summary.totalDebt.toFixed(2)}</div>
+                            <div class="label">Outstanding driver debts</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Pending Debts</h3>
+                            <div class="number">${summary.pendingDebts}</div>
+                            <div class="label">Debt records pending</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Drivers with Debt</h3>
+                            <div class="number">${summary.driverCount}</div>
+                            <div class="label">Drivers owing money</div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('debt-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading debt info:', error);
+                document.getElementById('debt-section').innerHTML = 
+                    '<div class="error">Error loading debt information</div>';
+            }
+        }
+
+        async function viewPayoutBatch(batchId) {
+            try {
+                const response = await fetch(`${API_BASE}/payouts/batch/${batchId}/payouts`, {
+                    headers: getAuthHeaders()
+                });
+                const payouts = await response.json();
+                
+                if (payouts.length === 0) {
+                    alert('No payouts in this batch');
+                    return;
+                }
+
+                let details = 'Payout Batch Details:\n\n';
+                payouts.forEach(payout => {
+                    details += `User: ${payout.user_type}\n`;
+                    details += `Gross: R${payout.gross_amount.toFixed(2)}\n`;
+                    details += `Debt Deductions: R${payout.debt_deductions.toFixed(2)}\n`;
+                    details += `Net: R${payout.net_amount.toFixed(2)}\n`;
+                    details += `Status: ${payout.status}\n`;
+                    details += '---\n';
+                });
+                
+                alert(details);
+
+            } catch (error) {
+                console.error('Error viewing payout batch:', error);
+                alert('Error loading payout details');
+            }
+        }
+
+        async function approvePayout(payoutId) {
+            try {
+                const response = await fetch(`${API_BASE}/payouts/${payoutId}/approve`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ approvedBy: 'admin' })
+                });
+
+                if (response.ok) {
+                    alert('Payout approved successfully');
+                    await loadPayoutInfo();
+                } else {
+                    alert('Failed to approve payout');
+                }
+            } catch (error) {
+                console.error('Error approving payout:', error);
+                alert('Error approving payout');
+            }
+        }
+
+        async function rejectPayout(payoutId) {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/payouts/${payoutId}/reject`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ reason })
+                });
+
+                if (response.ok) {
+                    alert('Payout rejected successfully');
+                    await loadPayoutInfo();
+                } else {
+                    alert('Failed to reject payout');
+                }
+            } catch (error) {
+                console.error('Error rejecting payout:', error);
+                alert('Error rejecting payout');
+            }
+        }
+
+        async function cancelPayoutBatch(batchId) {
+            if (!confirm('Are you sure you want to cancel this payout batch?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/payouts/batch/${batchId}/cancel`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    alert('Payout batch cancelled successfully');
+                    await loadPayoutInfo();
+                } else {
+                    alert('Failed to cancel payout batch');
+                }
+            } catch (error) {
+                console.error('Error cancelling payout batch:', error);
+                alert('Error cancelling payout batch');
             }
         }
 

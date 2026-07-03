@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# WhatsApp auth files
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Test files
+test-*.js
+test-*.ts
+check-*.js
+check-*.ts
+diagnose-*.js
+diagnose-*.ts
+debug-*.js
+debug-*.ts
+monitor-*.js
+force-*.js
+run-*.js
+
+# Temporary files
+*.tmp
+*.temp

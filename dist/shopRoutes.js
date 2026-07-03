@@ -355,5 +355,16 @@ router.get('/shop/:id/products/:productId', async (req, res) => {
         res.status(500).json({ error: 'Failed to get product' });
     }
 });
+// Get product variants
+router.get('/shop/:id/products/:productId/variants', async (req, res) => {
+    try {
+        const variants = await shopService.getProductVariants(getParam(req.params.productId));
+        res.json(variants);
+    }
+    catch (error) {
+        console.error('Error getting product variants:', error);
+        res.status(500).json({ error: 'Failed to get product variants' });
+    }
+});
 exports.default = router;
 //# sourceMappingURL=shopRoutes.js.map

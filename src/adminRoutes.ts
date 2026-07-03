@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { AdminService } from './AdminService';
+import { supabase } from './database';
 
 const router = Router();
 const adminService = new AdminService();
@@ -9,28 +10,63 @@ function getParam(param: string | string[]): string {
   return Array.isArray(param) ? param[0] : param;
 }
 
+// Authentication middleware for admin routes
+const authenticateAdmin = (req: Request, res: Response, next: Function) => {
+  const token = req.headers['authorization']?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  // Simple token validation (in production, use proper JWT verification)
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const [username] = decoded.split(':');
+    
+    if (username !== 'Delivery') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
 // Admin authentication routes
 router.post('/admin/login', async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-    // For now, simple admin auth - in production use proper JWT
-    const admin = await adminService.getAdminUserByEmail(email);
-    if (!admin) {
+    const { username, password } = req.body;
+    
+    console.log('Admin login attempt:', { username, password: password ? password : 'missing', passwordLength: password ? password.length : 0 });
+    
+    // Hardcoded admin credentials as requested
+    const ADMIN_USERNAME = 'Delivery';
+    const ADMIN_PASSWORD = 'D3l1v3ry';
+    
+    if (!username || !password) {
+      console.log('Missing username or password');
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+      console.log('Invalid credentials for:', username, '- password match:', password === ADMIN_PASSWORD, '- expected password length:', ADMIN_PASSWORD.length, '- received password length:', password.length);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    // Simple password check (use proper hashing in production)
-    if (admin.password_hash !== password) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    res.json({ success: true, admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role } });
+    
+    // Generate a simple token (in production, use proper JWT)
+    const token = Buffer.from(`${username}:${Date.now()}`).toString('base64');
+    
+    console.log('Admin login successful for:', username);
+    res.json({ success: true, token, username });
   } catch (error) {
     console.error('Error in admin login:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
 
-// Admin dashboard summary
-router.get('/admin/dashboard', async (req: Request, res: Response) => {
+// Admin dashboard summary (protected)
+router.get('/admin/dashboard', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const summary = await adminService.getDashboardSummary();
     if (!summary) {
@@ -43,8 +79,8 @@ router.get('/admin/dashboard', async (req: Request, res: Response) => {
   }
 });
 
-// Vendor registration management
-router.get('/admin/vendor-registrations/pending', async (req: Request, res: Response) => {
+// Vendor registration management (protected)
+router.get('/admin/vendor-registrations/pending', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const registrations = await adminService.getPendingVendorRegistrations();
     res.json(registrations);
@@ -54,7 +90,7 @@ router.get('/admin/vendor-registrations/pending', async (req: Request, res: Resp
   }
 });
 
-router.get('/admin/vendor-registrations/:id', async (req: Request, res: Response) => {
+router.get('/admin/vendor-registrations/:id', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const details = await adminService.getVendorRegistrationDetails(getParam(req.params.id));
     if (!details) {
@@ -67,7 +103,7 @@ router.get('/admin/vendor-registrations/:id', async (req: Request, res: Response
   }
 });
 
-router.post('/admin/vendor-registrations/:id/approve', async (req: Request, res: Response) => {
+router.post('/admin/vendor-registrations/:id/approve', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { adminId } = req.body;
     const success = await adminService.approveVendorRegistration(getParam(req.params.id), adminId);
@@ -81,7 +117,7 @@ router.post('/admin/vendor-registrations/:id/approve', async (req: Request, res:
   }
 });
 
-router.post('/admin/vendor-registrations/:id/reject', async (req: Request, res: Response) => {
+router.post('/admin/vendor-registrations/:id/reject', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { adminId, reason } = req.body;
     const success = await adminService.rejectVendorRegistration(getParam(req.params.id), adminId, reason);
@@ -95,8 +131,8 @@ router.post('/admin/vendor-registrations/:id/reject', async (req: Request, res: 
   }
 });
 
-// Driver registration management
-router.get('/admin/driver-registrations/pending', async (req: Request, res: Response) => {
+// Driver registration management (protected)
+router.get('/admin/driver-registrations/pending', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const registrations = await adminService.getPendingDriverRegistrations();
     res.json(registrations);
@@ -106,7 +142,7 @@ router.get('/admin/driver-registrations/pending', async (req: Request, res: Resp
   }
 });
 
-router.get('/admin/driver-registrations/:id', async (req: Request, res: Response) => {
+router.get('/admin/driver-registrations/:id', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const details = await adminService.getDriverRegistrationDetails(getParam(req.params.id));
     if (!details) {
@@ -119,7 +155,7 @@ router.get('/admin/driver-registrations/:id', async (req: Request, res: Response
   }
 });
 
-router.post('/admin/driver-registrations/:id/approve', async (req: Request, res: Response) => {
+router.post('/admin/driver-registrations/:id/approve', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { adminId } = req.body;
     const success = await adminService.approveDriverRegistration(getParam(req.params.id), adminId);
@@ -133,7 +169,7 @@ router.post('/admin/driver-registrations/:id/approve', async (req: Request, res:
   }
 });
 
-router.post('/admin/driver-registrations/:id/reject', async (req: Request, res: Response) => {
+router.post('/admin/driver-registrations/:id/reject', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { adminId, reason } = req.body;
     const success = await adminService.rejectDriverRegistration(getParam(req.params.id), adminId, reason);
@@ -147,8 +183,8 @@ router.post('/admin/driver-registrations/:id/reject', async (req: Request, res: 
   }
 });
 
-// Vendor management
-router.get('/admin/vendors', async (req: Request, res: Response) => {
+// Vendor management (protected)
+router.get('/admin/vendors', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const vendors = await adminService.getAllVendors();
     res.json(vendors);
@@ -158,7 +194,43 @@ router.get('/admin/vendors', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/admin/vendors/:id/suspend', async (req: Request, res: Response) => {
+router.get('/admin/vendors/:id', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const vendor = await adminService.getVendorById(getParam(req.params.id));
+    if (!vendor) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+    
+    // If vendor has missing details, try to fetch from registration request
+    if (!vendor.business_license_number || !vendor.tax_id) {
+      const { data: registration } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('merchant_id', getParam(req.params.id))
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (registration) {
+        // Merge registration data with vendor data
+        Object.assign(vendor, {
+          business_license_number: vendor.business_license_number || registration.business_license_number,
+          tax_id: vendor.tax_id || registration.tax_id,
+          business_description: vendor.business_description || registration.business_description,
+          operating_hours: vendor.operating_hours || registration.operating_hours,
+          shop_address: vendor.shop_address || registration.shop_address
+        });
+      }
+    }
+    
+    res.json(vendor);
+  } catch (error) {
+    console.error('Error getting vendor:', error);
+    res.status(500).json({ error: 'Failed to get vendor' });
+  }
+});
+
+router.put('/admin/vendors/:id/suspend', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const success = await adminService.suspendVendor(getParam(req.params.id));
     if (!success) {
@@ -171,7 +243,7 @@ router.put('/admin/vendors/:id/suspend', async (req: Request, res: Response) => 
   }
 });
 
-router.put('/admin/vendors/:id/activate', async (req: Request, res: Response) => {
+router.put('/admin/vendors/:id/activate', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const success = await adminService.activateVendor(getParam(req.params.id));
     if (!success) {
@@ -184,8 +256,8 @@ router.put('/admin/vendors/:id/activate', async (req: Request, res: Response) =>
   }
 });
 
-// Driver management
-router.get('/admin/drivers', async (req: Request, res: Response) => {
+// Driver management (protected)
+router.get('/admin/drivers', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const drivers = await adminService.getAllDrivers();
     res.json(drivers);
@@ -195,7 +267,47 @@ router.get('/admin/drivers', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/admin/drivers/:id/suspend', async (req: Request, res: Response) => {
+router.get('/admin/drivers/:id', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const driver = await adminService.getDriverById(getParam(req.params.id));
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+    
+    // If driver has missing details, try to fetch from registration request
+    if (!driver.driver_license_number || !driver.vehicle_type || !driver.name) {
+      const { data: registration } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('driver_id', getParam(req.params.id))
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (registration) {
+        // Merge registration data with driver data
+        Object.assign(driver, {
+          name: driver.name || registration.full_name,
+          phone: driver.phone || registration.phone,
+          driver_license_number: driver.driver_license_number || registration.driver_license_number,
+          vehicle_type: driver.vehicle_type || registration.vehicle_type,
+          vehicle_registration: driver.vehicle_registration || registration.vehicle_registration,
+          vehicle_color: driver.vehicle_color || registration.vehicle_color,
+          home_address: driver.home_address || registration.home_address,
+          emergency_contact_name: driver.emergency_contact_name || registration.emergency_contact_name,
+          emergency_contact_phone: driver.emergency_contact_phone || registration.emergency_contact_phone
+        });
+      }
+    }
+    
+    res.json(driver);
+  } catch (error) {
+    console.error('Error getting driver:', error);
+    res.status(500).json({ error: 'Failed to get driver' });
+  }
+});
+
+router.put('/admin/drivers/:id/suspend', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const success = await adminService.suspendDriver(getParam(req.params.id));
     if (!success) {
@@ -208,7 +320,7 @@ router.put('/admin/drivers/:id/suspend', async (req: Request, res: Response) => 
   }
 });
 
-router.put('/admin/drivers/:id/activate', async (req: Request, res: Response) => {
+router.put('/admin/drivers/:id/activate', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const success = await adminService.activateDriver(getParam(req.params.id));
     if (!success) {
@@ -221,8 +333,36 @@ router.put('/admin/drivers/:id/activate', async (req: Request, res: Response) =>
   }
 });
 
-// Order management
-router.get('/admin/orders', async (req: Request, res: Response) => {
+router.post('/admin/drivers/:id/approve', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { adminId } = req.body;
+    const success = await adminService.approveDriverDirectly(getParam(req.params.id), adminId);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to approve driver' });
+    }
+    res.json({ success: true, message: 'Driver approved successfully' });
+  } catch (error) {
+    console.error('Error approving driver:', error);
+    res.status(500).json({ error: 'Failed to approve driver' });
+  }
+});
+
+router.post('/admin/drivers/:id/reject', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { adminId, reason } = req.body;
+    const success = await adminService.rejectDriverDirectly(getParam(req.params.id), adminId, reason);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to reject driver' });
+    }
+    res.json({ success: true, message: 'Driver rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting driver:', error);
+    res.status(500).json({ error: 'Failed to reject driver' });
+  }
+});
+
+// Order management (protected)
+router.get('/admin/orders', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const orders = await adminService.getAllOrders();
     res.json(orders);
@@ -232,8 +372,8 @@ router.get('/admin/orders', async (req: Request, res: Response) => {
   }
 });
 
-// Admin user management
-router.post('/admin/users', async (req: Request, res: Response) => {
+// Admin user management (protected)
+router.post('/admin/users', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { email, password, name, role } = req.body;
     const admin = await adminService.createAdminUser(email, password, name, role);
@@ -247,7 +387,7 @@ router.post('/admin/users', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/admin/users', async (req: Request, res: Response) => {
+router.get('/admin/users', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const admins = await adminService.getAllAdminUsers();
     res.json(admins);

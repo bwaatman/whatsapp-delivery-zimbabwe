@@ -12,6 +12,10 @@ const driverRoutes_1 = __importDefault(require("./driverRoutes"));
 const adminRoutes_1 = __importDefault(require("./adminRoutes"));
 const authRoutes_1 = __importDefault(require("./authRoutes"));
 const categoryRoutes_1 = __importDefault(require("./categoryRoutes"));
+const paymentRoutes_1 = __importDefault(require("./paymentRoutes"));
+const WhatsAppBotService_1 = require("./WhatsAppBotService");
+const ShopService_1 = require("./ShopService");
+const DriverService_1 = require("./DriverService");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 // Load environment variables
@@ -93,12 +97,32 @@ app.get('/vendor-register', (req, res) => {
 });
 // Also serve static files for direct access
 app.use(express_1.default.static(publicPath));
+// Serve WhatsApp QR code
+app.get('/whatsapp-qr', (req, res) => {
+    const qrPath = path_1.default.join(publicPath, 'whatsapp-qr.png');
+    if (fs_1.default.existsSync(qrPath)) {
+        res.sendFile(qrPath);
+    }
+    else {
+        res.status(404).send('QR code not found. Please wait for the bot to generate it.');
+    }
+});
+app.get('/whatsapp-qr.png', (req, res) => {
+    const qrPath = path_1.default.join(publicPath, 'whatsapp-qr.png');
+    if (fs_1.default.existsSync(qrPath)) {
+        res.sendFile(qrPath);
+    }
+    else {
+        res.status(404).send('QR code not found. Please wait for the bot to generate it.');
+    }
+});
 // API Routes
 app.use('/api', shopRoutes_1.default);
 app.use('/api', driverRoutes_1.default);
 app.use('/api', adminRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api', categoryRoutes_1.default);
+app.use('/api', paymentRoutes_1.default);
 // Health check endpoint
 app.get('/health', async (req, res) => {
     try {
@@ -146,6 +170,22 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`  - Vendor: http://localhost:${PORT}/vendor`);
     console.log(`  - Driver: http://localhost:${PORT}/driver`);
 });
+// Initialize WhatsApp Bot Service (optional, can be enabled via environment variable)
+const ENABLE_WHATSAPP_BOT = process.env.ENABLE_WHATSAPP_BOT === 'true';
+if (ENABLE_WHATSAPP_BOT) {
+    console.log('🤖 Initializing WhatsApp Bot Service...');
+    const whatsappBot = new WhatsAppBotService_1.WhatsAppBotService();
+    // Set the WhatsApp bot service reference for ShopService and DriverService to use for notifications
+    (0, ShopService_1.setWhatsAppBotService)(whatsappBot);
+    (0, DriverService_1.setWhatsAppBotService)(whatsappBot);
+    whatsappBot.initialize().catch((error) => {
+        console.error('❌ Failed to initialize WhatsApp Bot:', error);
+        console.log('⚠️ WhatsApp Bot will not be available. Continuing with web dashboard only.');
+    });
+}
+else {
+    console.log('⚠️ WhatsApp Bot is disabled. Set ENABLE_WHATSAPP_BOT=true in .env to enable it.');
+}
 // Keep the server running
 console.log('Server started successfully. Press Ctrl+C to stop.');
 // Keep the process alive by preventing it from exiting

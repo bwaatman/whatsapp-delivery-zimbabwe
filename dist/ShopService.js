@@ -1,7 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ShopService = void 0;
+exports.setWhatsAppBotService = setWhatsAppBotService;
 const database_1 = require("./database");
+// Import WhatsApp bot service for sending notifications
+let whatsappBotService = null;
+// Function to set the WhatsApp bot service instance
+function setWhatsAppBotService(service) {
+    whatsappBotService = service;
+}
 class ShopService {
     async getShopById(shopId) {
         try {
@@ -81,6 +88,16 @@ class ShopService {
     async confirmOrder(orderId) {
         try {
             console.log('✅ Confirming order:', orderId);
+            // Get order details before updating
+            const { data: order } = await database_1.supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+            if (!order) {
+                console.error('❌ Order not found:', orderId);
+                return false;
+            }
             const { data, error } = await database_1.supabase
                 .from('orders')
                 .update({
@@ -95,6 +112,8 @@ class ShopService {
                 return false;
             }
             console.log('✅ Order confirmed successfully');
+            // Send WhatsApp notification to customer
+            await this.sendOrderStatusNotification(order.customer_phone, orderId, 'confirmed');
             return true;
         }
         catch (error) {
@@ -105,6 +124,16 @@ class ShopService {
     async startPreparingOrder(orderId) {
         try {
             console.log('👨‍🍳 Starting preparation for order:', orderId);
+            // Get order details before updating
+            const { data: order } = await database_1.supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+            if (!order) {
+                console.error('❌ Order not found:', orderId);
+                return false;
+            }
             const { data, error } = await database_1.supabase
                 .from('orders')
                 .update({
@@ -119,6 +148,9 @@ class ShopService {
                 return false;
             }
             console.log('✅ Order preparation started successfully');
+            console.log('📱 Attempting to send WhatsApp notification to:', order.customer_phone);
+            // Send WhatsApp notification to customer
+            await this.sendOrderStatusNotification(order.customer_phone, orderId, 'preparing');
             return true;
         }
         catch (error) {
@@ -129,6 +161,16 @@ class ShopService {
     async markOrderReadyForPickup(orderId, estimatedDeliveryMinutes) {
         try {
             console.log('📦 Marking order as ready for pickup:', orderId);
+            // Get order details before updating
+            const { data: order } = await database_1.supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+            if (!order) {
+                console.error('❌ Order not found:', orderId);
+                return false;
+            }
             const updateData = {
                 status: 'ready_for_pickup',
                 updated_at: new Date().toISOString()
@@ -149,6 +191,9 @@ class ShopService {
                 return false;
             }
             console.log('✅ Order marked as ready for pickup successfully');
+            console.log('📱 Attempting to send WhatsApp notification to:', order.customer_phone);
+            // Send WhatsApp notification to customer
+            await this.sendOrderStatusNotification(order.customer_phone, orderId, 'ready_for_pickup');
             return true;
         }
         catch (error) {
@@ -309,14 +354,31 @@ class ShopService {
     async createProduct(product) {
         try {
             console.log('📦 Creating new product...');
+            // Extract variants from product before insertion
+            const variants = product.variants || [];
+            const { variants: _, ...productData } = product;
             const { data, error } = await database_1.supabase
                 .from('products')
-                .insert(product)
+                .insert(productData)
                 .select()
                 .single();
             if (error) {
                 console.error('❌ Error creating product:', error);
                 return null;
+            }
+            // Insert variants if provided
+            if (variants.length > 0) {
+                for (const variant of variants) {
+                    await database_1.supabase
+                        .from('product_variants')
+                        .insert({
+                        product_id: data.id,
+                        name: variant.name,
+                        price_adjustment: variant.price_adjustment || 0,
+                        description: variant.description || null,
+                        is_available: true
+                    });
+                }
             }
             console.log('✅ Product created successfully');
             return data;
@@ -369,10 +431,13 @@ class ShopService {
     async updateProduct(productId, updates) {
         try {
             console.log('📦 Updating product:', productId);
+            // Extract variants from updates before updating the product
+            const variants = updates.variants;
+            const { variants: _, ...productUpdates } = updates;
             const { data, error } = await database_1.supabase
                 .from('products')
                 .update({
-                ...updates,
+                ...productUpdates,
                 updated_at: new Date().toISOString()
             })
                 .eq('id', productId)
@@ -381,6 +446,26 @@ class ShopService {
             if (error) {
                 console.error('❌ Error updating product:', error);
                 return false;
+            }
+            // Handle variants if provided
+            if (variants && Array.isArray(variants)) {
+                // Delete existing variants
+                await database_1.supabase
+                    .from('product_variants')
+                    .delete()
+                    .eq('product_id', productId);
+                // Insert new variants
+                for (const variant of variants) {
+                    await database_1.supabase
+                        .from('product_variants')
+                        .insert({
+                        product_id: productId,
+                        name: variant.name,
+                        price_adjustment: variant.price_adjustment || 0,
+                        description: variant.description || null,
+                        is_available: true
+                    });
+                }
             }
             console.log('✅ Product updated successfully');
             return true;
@@ -407,6 +492,26 @@ class ShopService {
         catch (error) {
             console.error('❌ Exception in deleteProduct:', error);
             return false;
+        }
+    }
+    async getProductVariants(productId) {
+        try {
+            console.log('📦 Getting variants for product:', productId);
+            const { data, error } = await database_1.supabase
+                .from('product_variants')
+                .select('*')
+                .eq('product_id', productId)
+                .order('name');
+            if (error) {
+                console.error('❌ Error getting product variants:', error);
+                return [];
+            }
+            console.log(`✅ Retrieved ${data.length} variants`);
+            return data || [];
+        }
+        catch (error) {
+            console.error('❌ Exception in getProductVariants:', error);
+            return [];
         }
     }
     async addProductImage(productImage) {
@@ -572,6 +677,52 @@ class ShopService {
         catch (error) {
             console.error('❌ Exception in submitVendorRegistration:', error);
             return null;
+        }
+    }
+    // Send WhatsApp notification to customer when order status changes
+    async sendOrderStatusNotification(customerPhone, orderId, status) {
+        try {
+            console.log('📱 Sending order status notification to customer:', customerPhone, 'Status:', status);
+            if (!whatsappBotService) {
+                console.warn('⚠️ WhatsApp bot service not available, skipping notification');
+                return;
+            }
+            console.log('✅ WhatsApp bot service is available');
+            // Format the phone number for WhatsApp
+            const formattedPhone = customerPhone.startsWith('+') ? customerPhone : `+${customerPhone}`;
+            console.log('📱 Formatted phone number:', formattedPhone);
+            // Create status message based on order status
+            let statusMessage = '';
+            const shortOrderId = orderId.substring(0, 8);
+            switch (status) {
+                case 'confirmed':
+                    statusMessage = `✅ *Order Confirmed!*\n\nYour order #${shortOrderId} has been confirmed by the vendor.\n\nYour order is now being prepared.\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                case 'preparing':
+                    statusMessage = `👨‍🍳 *Order In Preparation*\n\nYour order #${shortOrderId} is currently being prepared.\n\nWe'll notify you when it's ready for pickup.\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                case 'ready_for_pickup':
+                    statusMessage = `📦 *Order Ready for Pickup!*\n\nYour order #${shortOrderId} is ready for pickup.\n\nA driver will be assigned shortly.\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                case 'assigned':
+                    statusMessage = `🚗 *Driver Assigned!*\n\nA driver has been assigned to your order #${shortOrderId}.\n\nYour order is on its way!\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                case 'out_for_delivery':
+                    statusMessage = `🚚 *Order Out for Delivery!*\n\nYour order #${shortOrderId} is out for delivery.\n\nEstimated arrival time will be provided by the driver.\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                case 'delivered':
+                    statusMessage = `🎉 *Order Delivered!*\n\nYour order #${shortOrderId} has been delivered.\n\nThank you for your order! We hope you enjoy it.\n\nType "track ${shortOrderId}" to view your order details.`;
+                    break;
+                default:
+                    statusMessage = `📋 *Order Status Update*\n\nYour order #${shortOrderId} status has been updated to: ${status}\n\nType "track ${shortOrderId}" to check your order status.`;
+            }
+            console.log('📱 Message to send:', statusMessage);
+            // Send the message via WhatsApp bot
+            await whatsappBotService.sendMessageToCustomer(formattedPhone, statusMessage);
+            console.log('✅ Order status notification sent successfully');
+        }
+        catch (error) {
+            console.error('❌ Error sending order status notification:', error);
         }
     }
 }

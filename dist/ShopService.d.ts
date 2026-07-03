@@ -1,3 +1,4 @@
+export declare function setWhatsAppBotService(service: any): void;
 export interface Shop {
     id: string;
     name: string;
@@ -33,6 +34,12 @@ export interface Product {
     image_url?: string;
     created_at?: string;
     updated_at?: string;
+    variants?: ProductVariant[];
+}
+export interface ProductVariant {
+    name: string;
+    price_adjustment: number;
+    description?: string;
 }
 export interface ProductImage {
     id?: string;
@@ -89,6 +96,7 @@ export declare class ShopService {
     getProduct(productId: string): Promise<Product | null>;
     updateProduct(productId: string, updates: Partial<Product>): Promise<boolean>;
     deleteProduct(productId: string): Promise<boolean>;
+    getProductVariants(productId: string): Promise<any[]>;
     addProductImage(productImage: ProductImage): Promise<ProductImage | null>;
     getProductImages(productId: string): Promise<ProductImage[]>;
     deleteProductImage(imageId: string): Promise<boolean>;
@@ -96,5 +104,6 @@ export declare class ShopService {
     getProductsWithImages(merchantId: string): Promise<any[]>;
     setShopCategory(shopId: string, categoryId: string): Promise<boolean>;
     submitVendorRegistration(registrationData: any): Promise<any>;
+    private sendOrderStatusNotification;
 }
 //# sourceMappingURL=ShopService.d.ts.map

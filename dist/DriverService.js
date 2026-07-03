@@ -1,7 +1,48 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DriverService = void 0;
+exports.setWhatsAppBotService = setWhatsAppBotService;
 const database_1 = require("./database");
+const VehicleRestrictionService_1 = require("./VehicleRestrictionService");
+// Import WhatsApp bot service for sending notifications
+let whatsappBotService = null;
+// Function to set the WhatsApp bot service instance
+function setWhatsAppBotService(service) {
+    whatsappBotService = service;
+}
 class DriverService {
     async getDriverById(driverId) {
         try {
@@ -43,17 +84,67 @@ class DriverService {
             return null;
         }
     }
-    async getAvailableOrders() {
+    async getAvailableOrders(driverId) {
         try {
             console.log('📋 Getting available orders for drivers...');
             const { data, error } = await database_1.supabase
-                .rpc('get_available_orders_for_drivers');
+                .from('orders')
+                .select(`
+          id,
+          customer_phone,
+          customer_name,
+          order_details,
+          delivery_location,
+          merchants!inner (
+            shop_location,
+            shop_address,
+            name,
+            category_id
+          ),
+          created_at,
+          status
+        `)
+                .in('status', ['confirmed', 'preparing', 'ready_for_pickup'])
+                .is('assigned_driver_id', null)
+                .not('delivery_location', 'is', null)
+                .order('created_at', { ascending: true });
             if (error) {
                 console.error('❌ Error getting available orders:', error);
                 return [];
             }
-            console.log(`✅ Retrieved ${data.length} available orders`);
-            return data;
+            // Transform the data to match AvailableOrder interface
+            const orders = data.map((order) => ({
+                id: order.id,
+                customer_phone: order.customer_phone,
+                customer_name: order.customer_name,
+                order_details: order.order_details,
+                delivery_location: order.delivery_location,
+                shop_location: order.merchants?.shop_location,
+                shop_address: order.merchants?.shop_address,
+                shop_name: order.merchants?.name,
+                created_at: order.created_at,
+                estimated_preparation_time: 30, // Default 30 minutes
+                merchant_id: order.merchants?.category_id,
+                status: order.status
+            }));
+            // If driverId is provided, filter orders based on vehicle eligibility
+            if (driverId) {
+                const vehicleRestrictionService = new VehicleRestrictionService_1.VehicleRestrictionService();
+                const eligibleOrders = [];
+                for (const order of orders) {
+                    const isEligible = await vehicleRestrictionService.isDriverEligibleForOrder(driverId, order.shop_location, order.delivery_location, order.estimated_preparation_time || 30);
+                    if (isEligible) {
+                        eligibleOrders.push(order);
+                    }
+                    else {
+                        console.log(`🚗 Order ${order.id} is not eligible for driver ${driverId} - filtering out`);
+                    }
+                }
+                console.log(`✅ Retrieved ${eligibleOrders.length} eligible orders for driver ${driverId} (filtered from ${orders.length} total)`);
+                return eligibleOrders;
+            }
+            console.log(`✅ Retrieved ${orders.length} available orders`);
+            return orders;
         }
         catch (error) {
             console.error('❌ Exception in getAvailableOrders:', error);
@@ -64,19 +155,49 @@ class DriverService {
         try {
             console.log('📦 Getting active delivery for driver:', driverId);
             const { data, error } = await database_1.supabase
-                .rpc('get_driver_active_delivery', {
-                driver_id: driverId
-            });
+                .from('orders')
+                .select(`
+          id,
+          customer_phone,
+          order_details,
+          delivery_location,
+          merchants!inner (
+            shop_location,
+            shop_address,
+            name
+          ),
+          status,
+          updated_at,
+          merchant_id
+        `)
+                .eq('assigned_driver_id', driverId)
+                .in('status', ['assigned', 'out_for_delivery'])
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
             if (error) {
                 console.error('❌ Error getting active delivery:', error);
                 return null;
             }
-            if (!data || data.length === 0) {
+            if (!data) {
                 console.log('📭 No active delivery found');
                 return null;
             }
+            // Transform the data to match ActiveDelivery interface
+            const delivery = {
+                order_id: data.id,
+                customer_phone: data.customer_phone,
+                order_details: data.order_details,
+                delivery_location: data.delivery_location,
+                shop_location: data.merchants?.shop_location,
+                shop_address: data.merchants?.shop_address,
+                shop_name: data.merchants?.name,
+                status: data.status,
+                assigned_at: data.updated_at,
+                merchant_id: data.merchant_id
+            };
             console.log('✅ Active delivery retrieved successfully');
-            return data[0];
+            return delivery;
         }
         catch (error) {
             console.error('❌ Exception in getDriverActiveDelivery:', error);
@@ -86,6 +207,29 @@ class DriverService {
     async acceptOrder(orderId, driverId) {
         try {
             console.log('✅ Driver accepting order:', orderId);
+            // Get order details before updating
+            const { data: order } = await database_1.supabase
+                .from('orders')
+                .select(`
+          *,
+          merchants!inner (
+            shop_location
+          )
+        `)
+                .eq('id', orderId)
+                .single();
+            if (!order) {
+                console.error('❌ Order not found:', orderId);
+                return false;
+            }
+            // Check vehicle eligibility before accepting
+            const { VehicleRestrictionService } = await Promise.resolve().then(() => __importStar(require('./VehicleRestrictionService')));
+            const vehicleRestrictionService = new VehicleRestrictionService();
+            const isEligible = await vehicleRestrictionService.isDriverEligibleForOrder(driverId, order.merchants.shop_location, order.delivery_location, order.estimated_preparation_time || 30);
+            if (!isEligible) {
+                console.log(`❌ Driver ${driverId} is not eligible for order ${orderId} based on vehicle restrictions`);
+                return false;
+            }
             const { data, error } = await database_1.supabase
                 .from('orders')
                 .update({
@@ -103,6 +247,8 @@ class DriverService {
             // Mark driver as unavailable
             await this.setDriverAvailability(driverId, false);
             console.log('✅ Order accepted successfully');
+            // Send WhatsApp notification to customer
+            await this.sendOrderStatusNotification(order.customer_phone, orderId, 'assigned');
             return true;
         }
         catch (error) {
@@ -113,6 +259,16 @@ class DriverService {
     async startDelivery(orderId) {
         try {
             console.log('🚗 Starting delivery for order:', orderId);
+            // Get order details before updating
+            const { data: order } = await database_1.supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+            if (!order) {
+                console.error('❌ Order not found:', orderId);
+                return false;
+            }
             const { data, error } = await database_1.supabase
                 .from('orders')
                 .update({
@@ -127,6 +283,8 @@ class DriverService {
                 return false;
             }
             console.log('✅ Delivery started successfully');
+            // Send WhatsApp notification to customer
+            await this.sendOrderStatusNotification(order.customer_phone, orderId, 'out_for_delivery');
             return true;
         }
         catch (error) {
@@ -137,6 +295,16 @@ class DriverService {
     async completeDelivery(orderId, driverId) {
         try {
             console.log('✅ Completing delivery for order:', orderId);
+            // Get order details before updating
+            const { data: order } = await database_1.supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+            if (!order) {
+                console.error('❌ Order not found:', orderId);
+                return false;
+            }
             const { data, error } = await database_1.supabase
                 .from('orders')
                 .update({
@@ -150,9 +318,17 @@ class DriverService {
                 console.error('❌ Error completing delivery:', error);
                 return false;
             }
+            // Process order completion to create wallet transactions
+            if (data.merchant_id && data.assigned_driver_id) {
+                const { OrderEconomicsService } = await Promise.resolve().then(() => __importStar(require('./OrderEconomicsService')));
+                const orderEconomicsService = new OrderEconomicsService();
+                await orderEconomicsService.processOrderCompletion(orderId, data.merchant_id, data.assigned_driver_id);
+            }
             // Mark driver as available again
             await this.setDriverAvailability(driverId, true);
             console.log('✅ Delivery completed successfully');
+            // Send WhatsApp notification to customer
+            await this.sendOrderStatusNotification(order.customer_phone, orderId, 'delivered');
             return true;
         }
         catch (error) {
@@ -234,17 +410,45 @@ class DriverService {
     async getDriverDashboardSummary(driverId) {
         try {
             console.log('📊 Getting driver dashboard summary for:', driverId);
-            const { data, error } = await database_1.supabase
-                .from('driver_dashboard_summary')
+            // Get driver info
+            const { data: driver, error: driverError } = await database_1.supabase
+                .from('drivers')
                 .select('*')
-                .eq('driver_id', driverId)
+                .eq('id', driverId)
                 .single();
-            if (error) {
-                console.error('❌ Error getting driver dashboard summary:', error);
+            if (driverError || !driver) {
+                console.error('❌ Error getting driver:', driverError);
                 return null;
             }
+            // Get active deliveries count
+            const { count: activeCount, error: activeError } = await database_1.supabase
+                .from('orders')
+                .select('*', { count: 'exact', head: true })
+                .eq('assigned_driver_id', driverId)
+                .in('status', ['assigned', 'out_for_delivery']);
+            if (activeError) {
+                console.error('❌ Error getting active deliveries count:', activeError);
+            }
+            // Get today's deliveries count
+            const { count: todayCount, error: todayError } = await database_1.supabase
+                .from('orders')
+                .select('*', { count: 'exact', head: true })
+                .eq('assigned_driver_id', driverId)
+                .eq('status', 'delivered')
+                .gte('updated_at', new Date().toISOString().split('T')[0]);
+            if (todayError) {
+                console.error('❌ Error getting today deliveries count:', todayError);
+            }
+            const summary = {
+                driver_id: driver.id,
+                driver_name: driver.name,
+                is_available: driver.is_available,
+                active_deliveries: activeCount || 0,
+                today_deliveries: todayCount || 0,
+                current_location: driver.current_location
+            };
             console.log('✅ Driver dashboard summary retrieved successfully');
-            return data;
+            return summary;
         }
         catch (error) {
             console.error('❌ Exception in getDriverDashboardSummary:', error);
@@ -442,6 +646,41 @@ class DriverService {
         catch (error) {
             console.error('❌ Exception in getOrderDetails:', error);
             return null;
+        }
+    }
+    // Send WhatsApp notification to customer when order status changes
+    async sendOrderStatusNotification(customerPhone, orderId, status) {
+        try {
+            console.log('📱 Sending order status notification to customer:', customerPhone, 'Status:', status);
+            if (!whatsappBotService) {
+                console.warn('⚠️ WhatsApp bot service not available, skipping notification');
+                return;
+            }
+            console.log('✅ WhatsApp bot service is available');
+            // Format the phone number for WhatsApp
+            const formattedPhone = customerPhone.startsWith('+') ? customerPhone : `+${customerPhone}`;
+            console.log('📱 Formatted phone number:', formattedPhone);
+            // Create status message based on order status
+            let statusMessage = '';
+            const shortOrderId = orderId.substring(0, 8);
+            switch (status) {
+                case 'assigned':
+                    statusMessage = `🚗 *Driver Assigned*\n\nYour order #${shortOrderId} has been assigned to a driver.\n\nThe driver is on the way to pick up your order.\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                case 'out_for_delivery':
+                    statusMessage = `🚚 *Out for Delivery*\n\nYour order #${shortOrderId} is out for delivery.\n\nThe driver is on the way to your location.\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                case 'delivered':
+                    statusMessage = `🎉 *Order Delivered*\n\nYour order #${shortOrderId} has been delivered!\n\nThank you for your order. We hope you enjoy it!\n\nType "track ${shortOrderId}" to check your order status.`;
+                    break;
+                default:
+                    statusMessage = `📋 *Order Status Update*\n\nYour order #${shortOrderId} status has been updated to: ${status}\n\nType "track ${shortOrderId}" to check your order status.`;
+            }
+            await whatsappBotService.sendMessageToCustomer(formattedPhone, statusMessage);
+            console.log('✅ WhatsApp notification sent successfully');
+        }
+        catch (error) {
+            console.error('❌ Error sending WhatsApp notification:', error);
         }
     }
 }

@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { DriverService } from './DriverService';
+import { DriverSettlementService } from './DriverSettlementService';
 
 const router = Router();
 const driverService = new DriverService();
+const settlementService = new DriverSettlementService();
 
 // Helper function to safely extract string from params
 function getParam(param: string | string[]): string {
@@ -54,7 +56,8 @@ router.get('/driver/:id/dashboard', async (req: Request, res: Response) => {
 // Get available orders for drivers
 router.get('/driver/orders/available', async (req: Request, res: Response) => {
   try {
-    const orders = await driverService.getAvailableOrders();
+    const { driverId } = req.query;
+    const orders = await driverService.getAvailableOrders(driverId as string);
     res.json(orders);
   } catch (error) {
     console.error('Error getting available orders:', error);
@@ -136,7 +139,17 @@ router.put('/driver/:id/location', async (req: Request, res: Response) => {
 // Set driver availability
 router.put('/driver/:id/availability', async (req: Request, res: Response) => {
   try {
-    const { isAvailable } = req.body;
+    const { isAvailable, latitude, longitude } = req.body;
+    
+    // If location is provided and driver is going online, update location first
+    if (isAvailable && latitude !== undefined && longitude !== undefined) {
+      console.log('📍 Updating driver location with availability change');
+      const locationSuccess = await driverService.updateDriverLocation(getParam(req.params.id), latitude, longitude);
+      if (!locationSuccess) {
+        console.warn('⚠️ Failed to update driver location, but continuing with availability update');
+      }
+    }
+    
     const success = await driverService.setDriverAvailability(getParam(req.params.id), isAvailable);
     if (!success) {
       return res.status(400).json({ error: 'Failed to set driver availability' });
@@ -247,6 +260,79 @@ router.post('/drivers/register', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error submitting driver registration:', error);
     res.status(500).json({ error: 'Failed to submit driver registration' });
+  }
+});
+
+// Get weekly settlement for a specific driver
+router.get('/driver/:id/settlement', async (req: Request, res: Response) => {
+  try {
+    const { weekStart, weekEnd } = req.query;
+    
+    if (!weekStart || !weekEnd) {
+      return res.status(400).json({ error: 'weekStart and weekEnd query parameters are required' });
+    }
+
+    const settlement = await settlementService.calculateWeeklySettlement(
+      getParam(req.params.id),
+      new Date(weekStart as string),
+      new Date(weekEnd as string)
+    );
+
+    if (!settlement) {
+      return res.status(404).json({ error: 'No settlement data found for this period' });
+    }
+
+    res.json(settlement);
+  } catch (error) {
+    console.error('Error getting driver settlement:', error);
+    res.status(500).json({ error: 'Failed to get driver settlement' });
+  }
+});
+
+// Get weekly settlements for all drivers
+router.get('/drivers/settlements', async (req: Request, res: Response) => {
+  try {
+    const { weekStart, weekEnd } = req.query;
+    
+    if (!weekStart || !weekEnd) {
+      return res.status(400).json({ error: 'weekStart and weekEnd query parameters are required' });
+    }
+
+    const settlements = await settlementService.getWeeklySettlements(
+      new Date(weekStart as string),
+      new Date(weekEnd as string)
+    );
+
+    res.json(settlements);
+  } catch (error) {
+    console.error('Error getting driver settlements:', error);
+    res.status(500).json({ error: 'Failed to get driver settlements' });
+  }
+});
+
+// Get detailed settlement report for a driver
+router.get('/driver/:id/settlement/report', async (req: Request, res: Response) => {
+  try {
+    const { weekStart, weekEnd } = req.query;
+    
+    if (!weekStart || !weekEnd) {
+      return res.status(400).json({ error: 'weekStart and weekEnd query parameters are required' });
+    }
+
+    const report = await settlementService.getDriverSettlementReport(
+      getParam(req.params.id),
+      new Date(weekStart as string),
+      new Date(weekEnd as string)
+    );
+
+    if (!report) {
+      return res.status(404).json({ error: 'No settlement report found for this period' });
+    }
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error getting driver settlement report:', error);
+    res.status(500).json({ error: 'Failed to get driver settlement report' });
   }
 });
 

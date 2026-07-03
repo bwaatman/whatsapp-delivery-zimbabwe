@@ -356,6 +356,78 @@
                 <div class="number" id="assigned-orders">-</div>
                 <div class="label">Driver assigned</div>
             </div>
+            <div class="stat-card">
+                <h3>💰 Available Balance</h3>
+                <div class="number" id="available-balance">-</div>
+                <div class="label">Ready for payout</div>
+            </div>
+            <div class="stat-card">
+                <h3>💰 Pending Balance</h3>
+                <div class="number" id="pending-balance">-</div>
+                <div class="label">Processing</div>
+            </div>
+            <div class="stat-card">
+                <h3>💰 Total Earnings</h3>
+                <div class="number" id="total-earnings">-</div>
+                <div class="label">Lifetime earnings</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>💰 Wallet & Earnings</h2>
+                <button class="btn btn-refresh" onclick="loadWalletInfo()">🔄 Refresh</button>
+            </div>
+            <div id="wallet-section">
+                <div class="loading">Loading wallet information...</div>
+            </div>
+            
+            <!-- Payout Amount Input -->
+            <div id="payout-amount-section" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: none;">
+                <label for="payout-amount" style="display: block; margin-bottom: 10px; font-weight: bold;">Withdrawal Amount (R):</label>
+                <input type="number" id="payout-amount" placeholder="Enter amount (leave empty for full balance)" 
+                       style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em;">
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Leave empty to withdraw full available balance</p>
+                
+                <!-- Payout Method Selection -->
+                <div style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: bold;">Payout Method:</label>
+                    <div style="display: flex; gap: 20px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="payout-method" value="bank" checked onchange="togglePayoutDetails()" style="margin-right: 8px;">
+                            Bank Transfer
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="payout-method" value="ecocash" onchange="togglePayoutDetails()" style="margin-right: 8px;">
+                            Ecocash
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Bank Details -->
+                <div id="bank-details" style="margin-top: 15px;">
+                    <label for="bank-name" style="display: block; margin-bottom: 5px; font-weight: bold;">Bank Name:</label>
+                    <input type="text" id="bank-name" placeholder="e.g., Capitec Bank" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em; margin-bottom: 10px;">
+                    
+                    <label for="account-holder" style="display: block; margin-bottom: 5px; font-weight: bold;">Account Holder Name:</label>
+                    <input type="text" id="account-holder" placeholder="Account holder name" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em; margin-bottom: 10px;">
+                    
+                    <label for="account-number" style="display: block; margin-bottom: 5px; font-weight: bold;">Account Number:</label>
+                    <input type="text" id="account-number" placeholder="Account number" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em;">
+                </div>
+                
+                <!-- Ecocash Details -->
+                <div id="ecocash-details" style="margin-top: 15px; display: none;">
+                    <label for="ecocash-number" style="display: block; margin-bottom: 5px; font-weight: bold;">Ecocash Phone Number:</label>
+                    <input type="text" id="ecocash-number" placeholder="e.g., 0775705659" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em;">
+                </div>
+                
+                <button class="btn btn-confirm" onclick="requestPayout()" id="request-payout-btn" style="margin-top: 20px; width: 100%;">Request Payout</button>
+            </div>
         </div>
 
         <div class="section">
@@ -365,6 +437,36 @@
             </div>
             <div id="orders-section">
                 <div class="loading">Loading dashboard...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Confirmed Orders</h2>
+                <button class="btn btn-refresh" onclick="loadConfirmedOrders()">🔄 Refresh</button>
+            </div>
+            <div id="confirmed-orders-section">
+                <div class="loading">Loading confirmed orders...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Preparing Orders</h2>
+                <button class="btn btn-refresh" onclick="loadPreparingOrders()">🔄 Refresh</button>
+            </div>
+            <div id="preparing-orders-section">
+                <div class="loading">Loading preparing orders...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Ready Orders</h2>
+                <button class="btn btn-refresh" onclick="loadReadyOrders()">🔄 Refresh</button>
+            </div>
+            <div id="ready-orders-section">
+                <div class="loading">Loading ready orders...</div>
             </div>
         </div>
 
@@ -425,11 +527,32 @@
                     </label>
                 </div>
 
+                <div class="form-group">
+                    <label>Product Variants</label>
+                    <div id="variants-container">
+                        <div class="variant-item" style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                            <input type="text" class="variant-name" placeholder="Variant name (e.g., Chicken, Beef)" style="width: 30%; margin-right: 5px;">
+                            <input type="number" class="variant-price" placeholder="Price adjustment" step="0.01" style="width: 30%; margin-right: 5px;">
+                            <input type="text" class="variant-description" placeholder="Description" style="width: 35%; margin-right: 5px;">
+                            <button type="button" class="btn btn-reject" onclick="removeVariant(this)">Remove</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-refresh" onclick="addVariant()">+ Add Variant</button>
+                </div>
+
                 <div class="form-buttons">
                     <button type="submit" class="btn btn-confirm">Save Product</button>
                     <button type="button" class="btn btn-reject" onclick="hideProductForm()">Cancel</button>
                 </div>
             </form>
+        </div>
+
+        <div class="section" id="product-details-section" style="display: none;">
+            <h2>Product Details</h2>
+            <div id="product-details-content"></div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-reject" onclick="hideProductDetails()">Close</button>
+            </div>
         </div>
     </div>
 
@@ -463,8 +586,14 @@
                 document.getElementById('ready-orders').textContent = summary.ready_orders || 0;
                 document.getElementById('assigned-orders').textContent = summary.assigned_orders || 0;
 
-                // Load pending orders
+                // Load all order sections
                 await loadPendingOrders();
+                await loadConfirmedOrders();
+                await loadPreparingOrders();
+                await loadReadyOrders();
+
+                // Load wallet information
+                await loadWalletInfo();
 
             } catch (error) {
                 console.error('Error loading dashboard:', error);
@@ -484,13 +613,28 @@
                     return;
                 }
 
-                let html = '<div class="table-container"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                let html = '<div class="table-container"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Order Details</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
                 
                 orders.forEach(order => {
+                    let orderDetails = '';
+                    try {
+                        const details = JSON.parse(order.order_details || '[]');
+                        if (Array.isArray(details) && details.length > 0) {
+                            orderDetails = details.map(item => 
+                                `${item.product_name} x${item.quantity} ($${item.price.toFixed(2)})`
+                            ).join(', ');
+                        } else {
+                            orderDetails = 'No order details';
+                        }
+                    } catch (e) {
+                        orderDetails = 'Error parsing order details';
+                    }
+                    
                     html += `
                         <tr>
                             <td>${order.id.substring(0, 8)}...</td>
-                            <td>${order.customer_phone || 'N/A'}</td>
+                            <td>${order.customer_name || order.customer_phone || 'N/A'}</td>
+                            <td><div class="order-details">${orderDetails}</div></td>
                             <td><span class="status-badge status-pending">Pending</span></td>
                             <td>
                                 <button class="btn btn-confirm" onclick="confirmOrder('${order.id}')">Confirm</button>
@@ -509,6 +653,159 @@
             }
         }
 
+        async function loadConfirmedOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/orders/confirmed`);
+                const orders = await response.json();
+                
+                if (orders.length === 0) {
+                    document.getElementById('confirmed-orders-section').innerHTML = 
+                        '<div class="empty-state"><p>🎉 No confirmed orders</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Order Details</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                
+                orders.forEach(order => {
+                    let orderDetails = '';
+                    try {
+                        const details = JSON.parse(order.order_details || '[]');
+                        if (Array.isArray(details) && details.length > 0) {
+                            orderDetails = details.map(item => 
+                                `${item.product_name} x${item.quantity} ($${item.price.toFixed(2)})`
+                            ).join(', ');
+                        } else {
+                            orderDetails = 'No order details';
+                        }
+                    } catch (e) {
+                        orderDetails = 'Error parsing order details';
+                    }
+                    
+                    html += `
+                        <tr>
+                            <td>${order.id.substring(0, 8)}...</td>
+                            <td>${order.customer_name || order.customer_phone || 'N/A'}</td>
+                            <td><div class="order-details">${orderDetails}</div></td>
+                            <td><span class="status-badge status-confirmed">Confirmed</span></td>
+                            <td>
+                                <button class="btn btn-prepare" onclick="startPreparingOrder('${order.id}')">Start Preparing</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('confirmed-orders-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading confirmed orders:', error);
+                document.getElementById('confirmed-orders-section').innerHTML = 
+                    '<div class="error">Error loading confirmed orders</div>';
+            }
+        }
+
+        async function loadPreparingOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/orders/preparing`);
+                const orders = await response.json();
+                
+                if (orders.length === 0) {
+                    document.getElementById('preparing-orders-section').innerHTML = 
+                        '<div class="empty-state"><p>🎉 No preparing orders</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Order Details</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                
+                orders.forEach(order => {
+                    let orderDetails = '';
+                    try {
+                        const details = JSON.parse(order.order_details || '[]');
+                        if (Array.isArray(details) && details.length > 0) {
+                            orderDetails = details.map(item => 
+                                `${item.product_name} x${item.quantity} ($${item.price.toFixed(2)})`
+                            ).join(', ');
+                        } else {
+                            orderDetails = 'No order details';
+                        }
+                    } catch (e) {
+                        orderDetails = 'Error parsing order details';
+                    }
+                    
+                    html += `
+                        <tr>
+                            <td>${order.id.substring(0, 8)}...</td>
+                            <td>${order.customer_name || order.customer_phone || 'N/A'}</td>
+                            <td><div class="order-details">${orderDetails}</div></td>
+                            <td><span class="status-badge status-preparing">Preparing</span></td>
+                            <td>
+                                <button class="btn btn-ready" onclick="markOrderReady('${order.id}')">Mark Ready</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('preparing-orders-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading preparing orders:', error);
+                document.getElementById('preparing-orders-section').innerHTML = 
+                    '<div class="error">Error loading preparing orders</div>';
+            }
+        }
+
+        async function loadReadyOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/orders/ready`);
+                const orders = await response.json();
+                
+                if (orders.length === 0) {
+                    document.getElementById('ready-orders-section').innerHTML = 
+                        '<div class="empty-state"><p>🎉 No ready orders</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Order Details</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                
+                orders.forEach(order => {
+                    let orderDetails = '';
+                    try {
+                        const details = JSON.parse(order.order_details || '[]');
+                        if (Array.isArray(details) && details.length > 0) {
+                            orderDetails = details.map(item => 
+                                `${item.product_name} x${item.quantity} ($${item.price.toFixed(2)})`
+                            ).join(', ');
+                        } else {
+                            orderDetails = 'No order details';
+                        }
+                    } catch (e) {
+                        orderDetails = 'Error parsing order details';
+                    }
+                    
+                    html += `
+                        <tr>
+                            <td>${order.id.substring(0, 8)}...</td>
+                            <td>${order.customer_name || order.customer_phone || 'N/A'}</td>
+                            <td><div class="order-details">${orderDetails}</div></td>
+                            <td><span class="status-badge status-ready">Ready</span></td>
+                            <td>
+                                <span class="status-badge status-assigned">Waiting for driver</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('ready-orders-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading ready orders:', error);
+                document.getElementById('ready-orders-section').innerHTML = 
+                    '<div class="error">Error loading ready orders</div>';
+            }
+        }
+
         async function confirmOrder(orderId) {
             try {
                 const response = await fetch(`${API_BASE}/shop/${currentShopId}/orders/${orderId}/confirm`, {
@@ -518,12 +815,55 @@
                 if (response.ok) {
                     alert('Order confirmed successfully!');
                     loadDashboard();
+                    loadConfirmedOrders();
                 } else {
                     alert('Failed to confirm order');
                 }
             } catch (error) {
                 console.error('Error confirming order:', error);
                 alert('Error confirming order');
+            }
+        }
+
+        async function startPreparingOrder(orderId) {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/orders/${orderId}/prepare`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('Order preparation started successfully!');
+                    loadDashboard();
+                    loadConfirmedOrders();
+                    loadPreparingOrders();
+                } else {
+                    alert('Failed to start order preparation');
+                }
+            } catch (error) {
+                console.error('Error starting order preparation:', error);
+                alert('Error starting order preparation');
+            }
+        }
+
+        async function markOrderReady(orderId) {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/orders/${orderId}/ready`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estimatedDeliveryMinutes: 30 })
+                });
+                
+                if (response.ok) {
+                    alert('Order marked as ready successfully!');
+                    loadDashboard();
+                    loadPreparingOrders();
+                    loadReadyOrders();
+                } else {
+                    alert('Failed to mark order as ready');
+                }
+            } catch (error) {
+                console.error('Error marking order as ready:', error);
+                alert('Error marking order as ready');
             }
         }
 
@@ -584,6 +924,149 @@
             }
         }
 
+        async function loadWalletInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/wallet/${currentShopId}/vendor`);
+                const data = await response.json();
+                
+                if (data.wallet && data.balance) {
+                    document.getElementById('available-balance').textContent = `R${data.balance.available.toFixed(2)}`;
+                    document.getElementById('pending-balance').textContent = `R${data.balance.pending.toFixed(2)}`;
+                    document.getElementById('total-earnings').textContent = `R${data.balance.total.toFixed(2)}`;
+                    
+                    // Show request payout section if available balance >= minimum payout
+                    const configResponse = await fetch(`${API_BASE}/config/platform`);
+                    const config = await configResponse.json();
+                    if (data.balance.available >= config.min_payout_amount) {
+                        document.getElementById('payout-amount-section').style.display = 'block';
+                        document.getElementById('request-payout-btn').textContent = `Request Payout (Min: R${config.min_payout_amount})`;
+                    } else {
+                        document.getElementById('payout-amount-section').style.display = 'none';
+                    }
+                }
+                
+                // Load transaction history
+                const transactionsResponse = await fetch(`${API_BASE}/wallet/${data.wallet.id}/transactions`);
+                const transactions = await transactionsResponse.json();
+                
+                if (!transactions || !Array.isArray(transactions)) {
+                    document.getElementById('wallet-section').innerHTML = 
+                        '<div class="empty-state"><p>No transactions yet</p></div>';
+                    return;
+                }
+                
+                if (transactions.length === 0) {
+                    document.getElementById('wallet-section').innerHTML = 
+                        '<div class="empty-state"><p>No transactions yet</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Type</th><th>Amount</th><th>Balance After</th><th>Description</th><th>Date</th></tr></thead><tbody>';
+                
+                transactions.forEach(tx => {
+                    const date = new Date(tx.created_at).toLocaleDateString();
+                    html += `
+                        <tr>
+                            <td><span class="status-badge status-${tx.transaction_type}">${tx.transaction_type}</span></td>
+                            <td>R${parseFloat(tx.amount).toFixed(2)}</td>
+                            <td>R${parseFloat(tx.balance_after).toFixed(2)}</td>
+                            <td>${tx.description || 'N/A'}</td>
+                            <td>${date}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('wallet-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading wallet info:', error);
+                document.getElementById('wallet-section').innerHTML = 
+                    '<div class="error">Error loading wallet information</div>';
+            }
+        }
+
+        function togglePayoutDetails() {
+            const payoutMethod = document.querySelector('input[name="payout-method"]:checked').value;
+            const bankDetails = document.getElementById('bank-details');
+            const ecocashDetails = document.getElementById('ecocash-details');
+            
+            if (payoutMethod === 'bank') {
+                bankDetails.style.display = 'block';
+                ecocashDetails.style.display = 'none';
+            } else {
+                bankDetails.style.display = 'none';
+                ecocashDetails.style.display = 'block';
+            }
+        }
+
+        async function requestPayout() {
+            try {
+                const payoutAmountInput = document.getElementById('payout-amount');
+                const amount = payoutAmountInput.value ? parseFloat(payoutAmountInput.value) : null;
+                
+                const payoutMethod = document.querySelector('input[name="payout-method"]:checked').value;
+                let bankAccountDetails = null;
+                
+                if (payoutMethod === 'bank') {
+                    const bankName = document.getElementById('bank-name').value;
+                    const accountHolder = document.getElementById('account-holder').value;
+                    const accountNumber = document.getElementById('account-number').value;
+                    
+                    if (!bankName || !accountHolder || !accountNumber) {
+                        alert('Please fill in all bank details');
+                        return;
+                    }
+                    
+                    bankAccountDetails = {
+                        bank_name: bankName,
+                        account_holder: accountHolder,
+                        account_number: accountNumber
+                    };
+                } else {
+                    const ecocashNumber = document.getElementById('ecocash-number').value;
+                    
+                    if (!ecocashNumber) {
+                        alert('Please fill in ecocash phone number');
+                        return;
+                    }
+                    
+                    bankAccountDetails = {
+                        payment_method: 'ecocash',
+                        phone_number: ecocashNumber
+                    };
+                }
+                
+                const response = await fetch(`${API_BASE}/payouts/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userId: currentShopId,
+                        userType: 'vendor',
+                        amount: amount,
+                        payoutMethod: payoutMethod,
+                        bankAccountDetails: bankAccountDetails
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Payout request submitted successfully! It will be processed in the next payout batch.');
+                    payoutAmountInput.value = ''; // Clear the input
+                    document.getElementById('bank-name').value = '';
+                    document.getElementById('account-holder').value = '';
+                    document.getElementById('account-number').value = '';
+                    document.getElementById('ecocash-number').value = '';
+                    await loadWalletInfo();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to request payout');
+                }
+            } catch (error) {
+                console.error('Error requesting payout:', error);
+                alert('Error requesting payout');
+            }
+        }
+
         // Product Management Functions
         async function loadProducts() {
             try {
@@ -608,6 +1091,7 @@
                             <td>${deliveryTime}</td>
                             <td>${product.is_available ? '✅' : '❌'}</td>
                             <td>
+                                <button class="btn btn-refresh" onclick="viewProductDetails('${product.id}')">View</button>
                                 <button class="btn btn-refresh" onclick="editProduct('${product.id}')">Edit</button>
                                 <button class="btn btn-reject" onclick="deleteProduct('${product.id}')">Delete</button>
                             </td>
@@ -634,6 +1118,83 @@
 
         function hideProductForm() {
             document.getElementById('product-form-section').style.display = 'none';
+        }
+
+        function hideProductDetails() {
+            document.getElementById('product-details-section').style.display = 'none';
+        }
+
+        async function viewProductDetails(productId) {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/products/${productId}`);
+                const product = await response.json();
+                
+                // Fetch variants
+                const variantsResponse = await fetch(`${API_BASE}/shop/${currentShopId}/products/${productId}/variants`);
+                const variants = await variantsResponse.json();
+                
+                const deliveryTime = product.delivery_time ? `${product.delivery_time} ${product.delivery_time_unit || 'minutes'}` : 'N/A';
+                
+                let html = `
+                    <div class="product-details">
+                        <p><strong>Name:</strong> ${product.name}</p>
+                        <p><strong>Description:</strong> ${product.description || 'N/A'}</p>
+                        <p><strong>Price:</strong> $${product.price.toFixed(2)}</p>
+                        <p><strong>Category:</strong> ${product.category || 'N/A'}</p>
+                        <p><strong>Delivery Time:</strong> ${deliveryTime}</p>
+                        <p><strong>Available:</strong> ${product.is_available ? '✅ Yes' : '❌ No'}</p>
+                `;
+                
+                if (variants && variants.length > 0) {
+                    html += `<p><strong>Variants:</strong></p><ul>`;
+                    variants.forEach(variant => {
+                        const adjustedPrice = (product.price + variant.price_adjustment).toFixed(2);
+                        html += `<li>${variant.name} - $${adjustedPrice} ${variant.description ? `(${variant.description})` : ''}</li>`;
+                    });
+                    html += `</ul>`;
+                } else {
+                    html += `<p><strong>Variants:</strong> None</p>`;
+                }
+                
+                html += `</div>`;
+                
+                document.getElementById('product-details-content').innerHTML = html;
+                document.getElementById('product-details-section').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading product details:', error);
+                alert('Error loading product details');
+            }
+        }
+
+        function addVariant() {
+            const container = document.getElementById('variants-container');
+            const variantHtml = `
+                <div class="variant-item" style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <input type="text" class="variant-name" placeholder="Variant name (e.g., Chicken, Beef)" style="width: 30%; margin-right: 5px;">
+                    <input type="number" class="variant-price" placeholder="Price adjustment" step="0.01" style="width: 30%; margin-right: 5px;">
+                    <input type="text" class="variant-description" placeholder="Description" style="width: 35%; margin-right: 5px;">
+                    <button type="button" class="btn btn-reject" onclick="removeVariant(this)">Remove</button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', variantHtml);
+        }
+
+        function removeVariant(button) {
+            button.parentElement.remove();
+        }
+
+        function getVariants() {
+            const variants = [];
+            const variantItems = document.querySelectorAll('.variant-item');
+            variantItems.forEach(item => {
+                const name = item.querySelector('.variant-name').value;
+                const price = parseFloat(item.querySelector('.variant-price').value) || 0;
+                const description = item.querySelector('.variant-description').value;
+                if (name) {
+                    variants.push({ name, price_adjustment: price, description });
+                }
+            });
+            return variants;
         }
 
         async function editProduct(productId) {
@@ -690,7 +1251,8 @@
                 category: document.getElementById('product-category').value,
                 delivery_time: parseInt(document.getElementById('delivery-time').value) || null,
                 delivery_time_unit: document.getElementById('delivery-time-unit').value,
-                is_available: document.getElementById('product-available').checked
+                is_available: document.getElementById('product-available').checked,
+                variants: getVariants()
             };
 
             // Handle image upload

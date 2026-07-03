@@ -1,3 +1,4 @@
+export declare function setWhatsAppBotService(service: any): void;
 export interface Driver {
     id: string;
     name: string;
@@ -71,7 +72,7 @@ export interface DriverDashboardSummary {
 export declare class DriverService {
     getDriverById(driverId: string): Promise<Driver | null>;
     getDriverByPhone(phone: string): Promise<Driver | null>;
-    getAvailableOrders(): Promise<AvailableOrder[]>;
+    getAvailableOrders(driverId?: string): Promise<AvailableOrder[]>;
     getDriverActiveDelivery(driverId: string): Promise<ActiveDelivery | null>;
     acceptOrder(orderId: string, driverId: string): Promise<boolean>;
     startDelivery(orderId: string): Promise<boolean>;
@@ -87,5 +88,6 @@ export declare class DriverService {
     updateDriverProfile(driverId: string, updates: Partial<Driver>): Promise<boolean>;
     getAllAvailableDrivers(): Promise<Driver[]>;
     getOrderDetails(orderId: string): Promise<any>;
+    private sendOrderStatusNotification;
 }
 //# sourceMappingURL=DriverService.d.ts.map

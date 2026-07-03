@@ -241,16 +241,31 @@ export class AdminService {
         return false;
       }
 
-      // Update the merchant status
+      // Update the merchant status and transfer registration data
+      const merchantUpdate: any = {
+        registration_status: 'approved',
+        approved_by: adminId || null,
+        approved_at: new Date().toISOString(),
+        active: true,
+        password: registration.password || null,
+        business_license_number: registration.business_license_number,
+        tax_id: registration.tax_id,
+        business_description: registration.business_description,
+        operating_hours: registration.operating_hours,
+        shop_address: registration.shop_address
+      };
+
+      // Only update these fields if they exist in the database
+      if (registration.shop_location) {
+        merchantUpdate.shop_location = registration.shop_location;
+      }
+      if (registration.category_id) {
+        merchantUpdate.category_id = registration.category_id;
+      }
+
       const { error: updateMerchantError } = await supabase
         .from('merchants')
-        .update({
-          registration_status: 'approved',
-          approved_by: adminId || null,
-          approved_at: new Date().toISOString(),
-          active: true,
-          password: registration.password || null
-        })
+        .update(merchantUpdate)
         .eq('id', registration.merchant_id);
 
       if (updateMerchantError) {
@@ -354,16 +369,34 @@ export class AdminService {
         return false;
       }
 
-      // Update the driver status
+      // Update the driver status and transfer registration data
+      const driverUpdate: any = {
+        registration_status: 'approved',
+        approved_by: adminId || null,
+        approved_at: new Date().toISOString(),
+        is_available: true,
+        password: registration.password || null,
+        driver_license_number: registration.driver_license_number,
+        vehicle_type: registration.vehicle_type,
+        vehicle_registration: registration.vehicle_registration,
+        vehicle_color: registration.vehicle_color,
+        home_address: registration.home_address
+      };
+
+      // Only update these fields if they exist in the database
+      if (registration.emergency_contact_name) {
+        driverUpdate.emergency_contact_name = registration.emergency_contact_name;
+      }
+      if (registration.emergency_contact_phone) {
+        driverUpdate.emergency_contact_phone = registration.emergency_contact_phone;
+      }
+      if (registration.category_id) {
+        driverUpdate.category_id = registration.category_id;
+      }
+
       const { error: updateDriverError } = await supabase
         .from('drivers')
-        .update({
-          registration_status: 'approved',
-          approved_by: adminId || null,
-          approved_at: new Date().toISOString(),
-          is_available: true,
-          password: registration.password || null
-        })
+        .update(driverUpdate)
         .eq('id', registration.driver_id);
 
       if (updateDriverError) {
@@ -411,20 +444,14 @@ export class AdminService {
         return false;
       }
 
-      // Update the driver status
-      const { error: updateDriverError } = await supabase
+      // Delete the driver record
+      const { error: deleteDriverError } = await supabase
         .from('drivers')
-        .update({
-          registration_status: 'rejected',
-          approved_by: adminId || null,
-          approved_at: new Date().toISOString(),
-          rejection_reason: reason || null,
-          is_available: false
-        })
+        .delete()
         .eq('id', registration.driver_id);
 
-      if (updateDriverError) {
-        console.error('❌ Error updating driver:', updateDriverError);
+      if (deleteDriverError) {
+        console.error('❌ Error deleting driver:', deleteDriverError);
         return false;
       }
 
@@ -432,6 +459,60 @@ export class AdminService {
       return true;
     } catch (error) {
       console.error('❌ Exception in rejectDriverRegistration:', error);
+      return false;
+    }
+  }
+
+  async approveDriverDirectly(driverId: string, adminId?: string): Promise<boolean> {
+    try {
+      console.log('✅ Approving driver directly:', driverId);
+
+      const { error } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'approved',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString(),
+          is_available: true
+        })
+        .eq('id', driverId);
+
+      if (error) {
+        console.error('❌ Error approving driver:', error);
+        return false;
+      }
+
+      console.log('✅ Driver approved successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in approveDriverDirectly:', error);
+      return false;
+    }
+  }
+
+  async rejectDriverDirectly(driverId: string, adminId?: string, reason?: string): Promise<boolean> {
+    try {
+      console.log('❌ Rejecting driver directly:', driverId);
+
+      const { error } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'rejected',
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: reason || null
+        })
+        .eq('id', driverId);
+
+      if (error) {
+        console.error('❌ Error rejecting driver:', error);
+        return false;
+      }
+
+      console.log('✅ Driver rejected successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in rejectDriverDirectly:', error);
       return false;
     }
   }
@@ -689,6 +770,52 @@ export class AdminService {
       return data as DriverRegistrationRequest;
     } catch (error) {
       console.error('❌ Exception in getDriverRegistrationDetails:', error);
+      return null;
+    }
+  }
+
+  async getVendorById(vendorId: string): Promise<any> {
+    try {
+      console.log('📋 Getting vendor by ID:', vendorId);
+
+      const { data, error } = await supabase
+        .from('merchants')
+        .select('*')
+        .eq('id', vendorId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error getting vendor:', error);
+        return null;
+      }
+
+      console.log('✅ Vendor retrieved successfully');
+      return data;
+    } catch (error) {
+      console.error('❌ Exception in getVendorById:', error);
+      return null;
+    }
+  }
+
+  async getDriverById(driverId: string): Promise<any> {
+    try {
+      console.log('📋 Getting driver by ID:', driverId);
+
+      const { data, error } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('id', driverId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error getting driver:', error);
+        return null;
+      }
+
+      console.log('✅ Driver retrieved successfully');
+      return data;
+    } catch (error) {
+      console.error('❌ Exception in getDriverById:', error);
       return null;
     }
   }
