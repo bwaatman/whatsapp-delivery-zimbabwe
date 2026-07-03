@@ -35,6 +35,16 @@ console.log('  NODE_ENV:', process.env.NODE_ENV);
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
+// Request logging middleware - log ALL incoming requests
+app.use((req, res, next) => {
+    console.log('📥 Incoming request:', {
+        method: req.method,
+        path: req.path,
+        url: req.url,
+        headers: req.headers
+    });
+    next();
+});
 // Serve static files (dashboards)
 const publicPath = path_1.default.join(__dirname, '..', 'public');
 console.log('Serving static files from:', publicPath);

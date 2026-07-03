@@ -36,6 +36,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging middleware - log ALL incoming requests
+app.use((req, res, next) => {
+  console.log('📥 Incoming request:', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    headers: req.headers
+  });
+  next();
+});
+
 // Serve static files (dashboards)
 const publicPath = path.join(__dirname, '..', 'public');
 console.log('Serving static files from:', publicPath);
