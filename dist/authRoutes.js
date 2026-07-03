@@ -54,19 +54,25 @@ router.post('/login', async (req, res) => {
         else if (user_type === 'admin') {
             // Admin login with email and password
             if (!email || !password) {
+                console.log('Admin login missing email or password:', { email: !!email, password: !!password });
                 return res.status(400).json({ error: 'Email and password are required for admin login' });
             }
+            console.log('Admin login attempt for email:', email);
             const { data: adminUser, error } = await database_1.supabase
                 .from('admin_users')
                 .select('*')
                 .eq('email', email)
                 .eq('is_active', true)
                 .single();
+            console.log('Admin user query result:', { error: !!error, userFound: !!adminUser });
             if (error || !adminUser) {
+                console.log('Admin user not found or error:', error);
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
+            console.log('Admin user found, verifying password...');
             // Verify password hash
             const passwordMatch = await bcrypt_1.default.compare(password, adminUser.password_hash);
+            console.log('Password match result:', passwordMatch);
             if (!passwordMatch) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
