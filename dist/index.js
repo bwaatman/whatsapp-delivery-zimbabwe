@@ -252,34 +252,6 @@ app.get('/health/detailed', async (req, res) => {
         });
     }
 });
-// Catch-all route for SPA-like behavior - must be LAST
-app.get('/*', (req, res) => {
-    // If it's an API route, return 404
-    if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
-        return res.status(404).send('Not found');
-    }
-    // For dashboard routes, try to serve the appropriate HTML file
-    if (req.path === '/admin' || req.path.startsWith('/admin')) {
-        const filePath = path_1.default.join(publicPath, 'admin-dashboard.html');
-        if (fs_1.default.existsSync(filePath)) {
-            return res.sendFile(filePath);
-        }
-    }
-    else if (req.path === '/vendor' || req.path.startsWith('/vendor')) {
-        const filePath = path_1.default.join(publicPath, 'vendor-dashboard.html');
-        if (fs_1.default.existsSync(filePath)) {
-            return res.sendFile(filePath);
-        }
-    }
-    else if (req.path === '/driver' || req.path.startsWith('/driver')) {
-        const filePath = path_1.default.join(publicPath, 'driver-dashboard.html');
-        if (fs_1.default.existsSync(filePath)) {
-            return res.sendFile(filePath);
-        }
-    }
-    // Default to serving static files
-    res.status(404).send('Page not found');
-});
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`WhatsApp Delivery Platform server running on port ${PORT}`);
