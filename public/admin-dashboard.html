@@ -385,9 +385,12 @@
         // Helper function to get auth headers
         function getAuthHeaders() {
             const token = localStorage.getItem('adminToken');
+            const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
             return {
                 'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : ''
+                'Authorization': token ? `Bearer ${token}` : '',
+                'x-user-id': adminUser.id || '',
+                'x-user-type': 'admin'
             };
         }
 
