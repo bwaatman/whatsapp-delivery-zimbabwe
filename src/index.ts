@@ -261,7 +261,7 @@ app.get('/health/detailed', async (req, res) => {
 });
 
 // Catch-all route for SPA-like behavior - must be LAST
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   // If it's an API route, return 404
   if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
     return res.status(404).send('Not found');
