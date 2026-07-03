@@ -18,11 +18,14 @@ const authenticateAdmin = (req, res, next) => {
     // Simple token validation (in production, use proper JWT verification)
     try {
         const decoded = Buffer.from(token, 'base64').toString('utf-8');
-        const [username] = decoded.split(':');
-        if (username !== 'Delivery') {
+        const [userType, userId] = decoded.split(':');
+        // Accept tokens from the new auth system (format: admin:userId:timestamp)
+        if (userType === 'admin') {
+            next();
+        }
+        else {
             return res.status(401).json({ error: 'Invalid token' });
         }
-        next();
     }
     catch (error) {
         return res.status(401).json({ error: 'Invalid token' });
