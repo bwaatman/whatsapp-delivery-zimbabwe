@@ -44,27 +44,36 @@ console.log('Public directory exists:', fs.existsSync(publicPath));
 // Dashboard routes - serve HTML files directly
 app.get('/admin', (req, res) => {
   const filePath = path.join(publicPath, 'admin-dashboard.html');
+  console.log('🔍 Admin dashboard request. Path:', filePath);
+  console.log('🔍 File exists:', fs.existsSync(filePath));
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
+    console.log('❌ Admin dashboard file not found at:', filePath);
     res.status(404).send('Admin dashboard not found');
   }
 });
 
 app.get('/vendor', (req, res) => {
   const filePath = path.join(publicPath, 'vendor-dashboard.html');
+  console.log('🔍 Vendor dashboard request. Path:', filePath);
+  console.log('🔍 File exists:', fs.existsSync(filePath));
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
+    console.log('❌ Vendor dashboard file not found at:', filePath);
     res.status(404).send('Vendor dashboard not found');
   }
 });
 
 app.get('/driver', (req, res) => {
   const filePath = path.join(publicPath, 'driver-dashboard.html');
+  console.log('🔍 Driver dashboard request. Path:', filePath);
+  console.log('🔍 File exists:', fs.existsSync(filePath));
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
+    console.log('❌ Driver dashboard file not found at:', filePath);
     res.status(404).send('Driver dashboard not found');
   }
 });
