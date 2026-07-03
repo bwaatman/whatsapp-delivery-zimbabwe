@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && xcopy public dist\\public /E /I /Y",
+    "build": "tsc && npm run copy-public",
+    "copy-public": "node -e \"const fs = require('fs'); const path = require('path'); const source = path.join(__dirname, 'public'); const dest = path.join(__dirname, 'dist', 'public'); if (!fs.existsSync(dest)) { fs.mkdirSync(dest, { recursive: true }); } const copy = (src, dst) => { const files = fs.readdirSync(src); files.forEach(file => { const srcPath = path.join(src, file); const dstPath = path.join(dst, file); if (fs.lstatSync(srcPath).isDirectory()) { if (!fs.existsSync(dstPath)) { fs.mkdirSync(dstPath, { recursive: true }); } copy(srcPath, dstPath); } else { fs.copyFileSync(srcPath, dstPath); } }); }; copy(source, dest); console.log('Public files copied to dist/public');\"",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "dev:watch": "nodemon src/index.ts"
