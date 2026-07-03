@@ -97,10 +97,7 @@ app.get('/vendor-register', (req, res) => {
   }
 });
 
-// Also serve static files for direct access
-app.use(express.static(publicPath));
-
-// Root route - serve a simple landing page
+// Root route - serve a simple landing page (must be before static files)
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -162,6 +159,9 @@ app.get('/', (req, res) => {
     </html>
   `);
 });
+
+// Also serve static files for direct access
+app.use(express.static(publicPath));
 
 // Serve WhatsApp QR code
 app.get('/whatsapp-qr', (req, res) => {

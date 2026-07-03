@@ -95,9 +95,7 @@ app.get('/vendor-register', (req, res) => {
         res.status(404).send('Vendor registration page not found');
     }
 });
-// Also serve static files for direct access
-app.use(express_1.default.static(publicPath));
-// Root route - serve a simple landing page
+// Root route - serve a simple landing page (must be before static files)
 app.get('/', (req, res) => {
     res.send(`
     <!DOCTYPE html>
@@ -159,6 +157,8 @@ app.get('/', (req, res) => {
     </html>
   `);
 });
+// Also serve static files for direct access
+app.use(express_1.default.static(publicPath));
 // Serve WhatsApp QR code
 app.get('/whatsapp-qr', (req, res) => {
     const qrPath = path_1.default.join(publicPath, 'whatsapp-qr.png');
