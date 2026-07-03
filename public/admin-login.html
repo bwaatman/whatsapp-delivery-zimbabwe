@@ -139,12 +139,12 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:10000/api';
+        const API_BASE = '/api';
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
             const loginButton = document.getElementById('loginButton');
@@ -154,12 +154,12 @@
             loginButton.textContent = 'Logging in...';
 
             try {
-                const response = await fetch(`${API_BASE}/admin/login`, {
+                const response = await fetch(`${API_BASE}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ user_type: 'admin', email, password })
                 });
 
                 const data = await response.json();
@@ -167,6 +167,7 @@
                 if (response.ok) {
                     localStorage.setItem('adminAuth', 'true');
                     localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminUser', JSON.stringify(data.user));
                     window.location.href = '/admin';
                 } else {
                     errorMessage.textContent = data.error || 'Login failed. Please try again.';
