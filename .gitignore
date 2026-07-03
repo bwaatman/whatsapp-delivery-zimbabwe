@@ -55,3 +55,6 @@ run-*.js
 # Temporary files
 *.tmp
 *.temp
+
+# Embedded git repositories
+peanut-butter-manufacturing/

@@ -48,7 +48,7 @@ app.use((req, res, next) => {
 });
 
 // Serve static files (dashboards)
-const publicPath = path.join(__dirname, '..', 'public');
+const publicPath = path.join(__dirname, 'public');
 console.log('Serving static files from:', publicPath);
 console.log('Public directory exists:', fs.existsSync(publicPath));
 

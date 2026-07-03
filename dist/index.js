@@ -46,7 +46,7 @@ app.use((req, res, next) => {
     next();
 });
 // Serve static files (dashboards)
-const publicPath = path_1.default.join(__dirname, '..', 'public');
+const publicPath = path_1.default.join(__dirname, 'public');
 console.log('Serving static files from:', publicPath);
 console.log('Public directory exists:', fs_1.default.existsSync(publicPath));
 // Dashboard routes - serve HTML files directly
