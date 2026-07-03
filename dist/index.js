@@ -44,11 +44,21 @@ app.get('/admin', (req, res) => {
     const filePath = path_1.default.join(publicPath, 'admin-dashboard.html');
     console.log('🔍 Admin dashboard request. Path:', filePath);
     console.log('🔍 File exists:', fs_1.default.existsSync(filePath));
+    console.log('🔍 Public directory:', publicPath);
+    console.log('🔍 __dirname:', __dirname);
     if (fs_1.default.existsSync(filePath)) {
         res.sendFile(filePath);
     }
     else {
         console.log('❌ Admin dashboard file not found at:', filePath);
+        console.log('❌ Listing public directory contents:');
+        try {
+            const files = fs_1.default.readdirSync(publicPath);
+            console.log('Files in public:', files);
+        }
+        catch (e) {
+            console.log('❌ Cannot read public directory:', e);
+        }
         res.status(404).send('Admin dashboard not found');
     }
 });
