@@ -97,6 +97,68 @@ app.get('/vendor-register', (req, res) => {
 });
 // Also serve static files for direct access
 app.use(express_1.default.static(publicPath));
+// Root route - serve a simple landing page
+app.get('/', (req, res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ZimDelivery - WhatsApp Delivery Platform</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0;
+                padding: 20px;
+            }
+            .container {
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                padding: 40px;
+                max-width: 600px;
+                text-align: center;
+            }
+            h1 {
+                color: #333;
+                margin-bottom: 20px;
+            }
+            .button {
+                display: inline-block;
+                margin: 10px;
+                padding: 15px 30px;
+                border-radius: 5px;
+                text-decoration: none;
+                color: white;
+                font-weight: bold;
+                transition: transform 0.3s ease;
+            }
+            .button:hover {
+                transform: translateY(-3px);
+            }
+            .admin { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+            .vendor { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+            .driver { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚚 ZimDelivery Platform</h1>
+            <p style="color: #666; margin-bottom: 30px;">Select your dashboard to continue</p>
+            <a href="/admin" class="button admin">Admin Dashboard</a><br>
+            <a href="/vendor" class="button vendor">Vendor Dashboard</a><br>
+            <a href="/driver" class="button driver">Driver Dashboard</a>
+        </div>
+    </body>
+    </html>
+  `);
+});
 // Serve WhatsApp QR code
 app.get('/whatsapp-qr', (req, res) => {
     const qrPath = path_1.default.join(publicPath, 'whatsapp-qr.png');
