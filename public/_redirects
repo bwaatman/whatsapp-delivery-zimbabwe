@@ -1,0 +1,8 @@
+/admin /admin-dashboard.html 200
+/vendor /vendor-dashboard.html 200
+/driver /driver-dashboard.html 200
+/login /login.html 200
+/driver-register /driver-register.html 200
+/vendor-register /vendor-register.html 200
+/admin-login /admin-login.html 200
+/* /index.html 200
