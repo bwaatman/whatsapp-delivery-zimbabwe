@@ -673,24 +673,37 @@
                 const registrations = await response.json();
                 
                 const registration = registrations.find(reg => reg.merchant_id === vendorId);
-                if (!registration) {
-                    alert('No pending registration found for this vendor');
-                    return;
-                }
-                
                 const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
-                const approveResponse = await fetch(`${API_BASE}/admin/vendor-registrations/${registration.id}/approve`, {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ adminId: adminUser.id })
-                });
                 
-                if (approveResponse.ok) {
-                    alert('Vendor approved successfully!');
-                    loadDashboard();
+                if (registration) {
+                    // Use the registration approval flow
+                    const approveResponse = await fetch(`${API_BASE}/admin/vendor-registrations/${registration.id}/approve`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ adminId: adminUser.id })
+                    });
+                    
+                    if (approveResponse.ok) {
+                        alert('Vendor approved successfully!');
+                        loadDashboard();
+                    } else {
+                        const errorData = await approveResponse.json();
+                        alert('Failed to approve vendor: ' + (errorData.error || 'Unknown error'));
+                    }
                 } else {
-                    const errorData = await approveResponse.json();
-                    alert('Failed to approve vendor: ' + (errorData.error || 'Unknown error'));
+                    // No registration request found, approve directly
+                    const approveResponse = await fetch(`${API_BASE}/admin/vendors/${vendorId}/activate`, {
+                        method: 'PUT',
+                        headers: getAuthHeaders()
+                    });
+                    
+                    if (approveResponse.ok) {
+                        alert('Vendor approved successfully!');
+                        loadDashboard();
+                    } else {
+                        const errorData = await approveResponse.json();
+                        alert('Failed to approve vendor: ' + (errorData.error || 'Unknown error'));
+                    }
                 }
             } catch (error) {
                 console.error('Error approving vendor:', error);
