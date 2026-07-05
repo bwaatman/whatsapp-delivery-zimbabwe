@@ -821,8 +821,19 @@
 
         async function viewVendorProfile(vendorId) {
             try {
-                const response = await fetch(`${API_BASE}/admin/vendors/${vendorId}`);
+                const response = await fetch(`${API_BASE}/admin/vendors/${vendorId}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert('Failed to load vendor profile: ' + (errorData.error || 'Unknown error'));
+                    return;
+                }
+                
                 const vendor = await response.json();
+                
+                console.log('Vendor data:', vendor);
                 
                 // Fetch category name if category_id exists
                 let categoryName = 'Not set';
@@ -839,9 +850,9 @@
                 const profileInfo = `
                     <div class="profile-modal">
                         <h3>Vendor Profile</h3>
-                        <p><strong>Business Name:</strong> ${vendor.name || vendor.shop_name}</p>
-                        <p><strong>Phone:</strong> ${vendor.contact_phone || vendor.phone}</p>
-                        <p><strong>Status:</strong> ${vendor.registration_status}</p>
+                        <p><strong>Business Name:</strong> ${vendor.name || vendor.shop_name || 'N/A'}</p>
+                        <p><strong>Phone:</strong> ${vendor.contact_phone || vendor.phone || 'N/A'}</p>
+                        <p><strong>Status:</strong> ${vendor.registration_status || 'N/A'}</p>
                         <p><strong>Active:</strong> ${vendor.active ? 'Yes' : 'No'}</p>
                         <p><strong>Business Address:</strong> ${vendor.shop_address || 'N/A'}</p>
                         <p><strong>Business License:</strong> ${vendor.business_license_number || 'N/A'}</p>
@@ -849,7 +860,7 @@
                         <p><strong>Description:</strong> ${vendor.business_description || 'N/A'}</p>
                         <p><strong>Operating Hours:</strong> ${vendor.operating_hours ? JSON.stringify(vendor.operating_hours) : 'N/A'}</p>
                         <p><strong>Category:</strong> ${categoryName}</p>
-                        <p><strong>Created:</strong> ${new Date(vendor.created_at).toLocaleString()}</p>
+                        <p><strong>Created:</strong> ${vendor.created_at ? new Date(vendor.created_at).toLocaleString() : 'N/A'}</p>
                         <button class="btn btn-reject" onclick="closeProfileModal()">Close</button>
                     </div>
                 `;
