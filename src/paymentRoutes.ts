@@ -99,7 +99,7 @@ const isValidUUID = (uuid: string): boolean => {
 };
 
 const isValidUserType = (userType: string): boolean => {
-  return ['driver', 'vendor', 'platform'].includes(userType);
+  return ['driver', 'vendor', 'platform', 'admin'].includes(userType);
 };
 
 const isValidTransactionType = (type: string): boolean => {
