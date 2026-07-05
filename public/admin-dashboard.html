@@ -628,34 +628,37 @@
                 const registrations = await response.json();
                 
                 const registration = registrations.find(reg => reg.driver_id === driverId);
+                const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
                 
                 if (registration) {
                     // Use the registration rejection flow
                     const rejectResponse = await fetch(`${API_BASE}/admin/driver-registrations/${registration.id}/reject`, {
                         method: 'POST',
                         headers: getAuthHeaders(),
-                        body: JSON.stringify({ reason })
+                        body: JSON.stringify({ adminId: adminUser.id, reason })
                     });
                     
                     if (rejectResponse.ok) {
                         alert('Driver rejected successfully!');
                         loadDashboard();
                     } else {
-                        alert('Failed to reject driver');
+                        const errorData = await rejectResponse.json();
+                        alert('Failed to reject driver: ' + (errorData.error || 'Unknown error'));
                     }
                 } else {
                     // No registration request found, reject directly
                     const rejectResponse = await fetch(`${API_BASE}/admin/drivers/${driverId}/reject`, {
                         method: 'POST',
                         headers: getAuthHeaders(),
-                        body: JSON.stringify({ reason })
+                        body: JSON.stringify({ adminId: adminUser.id, reason })
                     });
                     
                     if (rejectResponse.ok) {
                         alert('Driver rejected successfully!');
                         loadDashboard();
                     } else {
-                        alert('Failed to reject driver');
+                        const errorData = await rejectResponse.json();
+                        alert('Failed to reject driver: ' + (errorData.error || 'Unknown error'));
                     }
                 }
             } catch (error) {
@@ -723,22 +726,36 @@
                 const registrations = await response.json();
                 
                 const registration = registrations.find(reg => reg.merchant_id === vendorId);
-                if (!registration) {
-                    alert('No pending registration found for this vendor');
-                    return;
-                }
+                const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
                 
-                const rejectResponse = await fetch(`${API_BASE}/admin/vendor-registrations/${registration.id}/reject`, {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ reason })
-                });
-                
-                if (rejectResponse.ok) {
-                    alert('Vendor rejected successfully!');
-                    loadDashboard();
+                if (registration) {
+                    const rejectResponse = await fetch(`${API_BASE}/admin/vendor-registrations/${registration.id}/reject`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ adminId: adminUser.id, reason })
+                    });
+                    
+                    if (rejectResponse.ok) {
+                        alert('Vendor rejected successfully!');
+                        loadDashboard();
+                    } else {
+                        const errorData = await rejectResponse.json();
+                        alert('Failed to reject vendor: ' + (errorData.error || 'Unknown error'));
+                    }
                 } else {
-                    alert('Failed to reject vendor');
+                    // No registration request found, suspend instead
+                    const rejectResponse = await fetch(`${API_BASE}/admin/vendors/${vendorId}/suspend`, {
+                        method: 'PUT',
+                        headers: getAuthHeaders()
+                    });
+                    
+                    if (rejectResponse.ok) {
+                        alert('Vendor suspended successfully!');
+                        loadDashboard();
+                    } else {
+                        const errorData = await rejectResponse.json();
+                        alert('Failed to suspend vendor: ' + (errorData.error || 'Unknown error'));
+                    }
                 }
             } catch (error) {
                 console.error('Error rejecting vendor:', error);
