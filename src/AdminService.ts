@@ -497,10 +497,7 @@ export class AdminService {
       const { error } = await supabase
         .from('drivers')
         .update({
-          registration_status: 'rejected',
-          reviewed_by: adminId || null,
-          reviewed_at: new Date().toISOString(),
-          rejection_reason: reason || null
+          registration_status: 'rejected'
         })
         .eq('id', driverId);
 
