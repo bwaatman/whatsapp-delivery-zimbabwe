@@ -577,34 +577,37 @@
                 const registrations = await response.json();
                 
                 const registration = registrations.find(reg => reg.driver_id === driverId);
+                const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
                 
                 if (registration) {
                     // Use the registration approval flow
                     const approveResponse = await fetch(`${API_BASE}/admin/driver-registrations/${registration.id}/approve`, {
                         method: 'POST',
                         headers: getAuthHeaders(),
-                        body: JSON.stringify({})
+                        body: JSON.stringify({ adminId: adminUser.id })
                     });
                     
                     if (approveResponse.ok) {
                         alert('Driver approved successfully!');
                         loadDashboard();
                     } else {
-                        alert('Failed to approve driver');
+                        const errorData = await approveResponse.json();
+                        alert('Failed to approve driver: ' + (errorData.error || 'Unknown error'));
                     }
                 } else {
                     // No registration request found, approve directly
                     const approveResponse = await fetch(`${API_BASE}/admin/drivers/${driverId}/approve`, {
                         method: 'POST',
                         headers: getAuthHeaders(),
-                        body: JSON.stringify({})
+                        body: JSON.stringify({ adminId: adminUser.id })
                     });
                     
                     if (approveResponse.ok) {
                         alert('Driver approved successfully!');
                         loadDashboard();
                     } else {
-                        alert('Failed to approve driver');
+                        const errorData = await approveResponse.json();
+                        alert('Failed to approve driver: ' + (errorData.error || 'Unknown error'));
                     }
                 }
             } catch (error) {
@@ -675,17 +678,19 @@
                     return;
                 }
                 
+                const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
                 const approveResponse = await fetch(`${API_BASE}/admin/vendor-registrations/${registration.id}/approve`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
-                    body: JSON.stringify({})
+                    body: JSON.stringify({ adminId: adminUser.id })
                 });
                 
                 if (approveResponse.ok) {
                     alert('Vendor approved successfully!');
                     loadDashboard();
                 } else {
-                    alert('Failed to approve vendor');
+                    const errorData = await approveResponse.json();
+                    alert('Failed to approve vendor: ' + (errorData.error || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error approving vendor:', error);
