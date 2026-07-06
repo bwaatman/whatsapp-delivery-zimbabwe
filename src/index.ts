@@ -262,16 +262,26 @@ app.get('/health/detailed', async (req, res) => {
 
 // WhatsApp QR Code endpoint
 app.get('/whatsapp-qr', (req, res) => {
-  const qrPath = path.join(__dirname, 'public', 'whatsapp-qr.png');
-  if (fs.existsSync(qrPath)) {
-    res.sendFile(qrPath);
-  } else {
-    res.status(404).send('QR Code not available. WhatsApp bot may not be initialized or already connected.');
+  // Check both possible locations for the QR code
+  const possiblePaths = [
+    path.join(__dirname, '..', 'public', 'whatsapp-qr.png'), // When running from dist
+    path.join(__dirname, 'public', 'whatsapp-qr.png'), // When running from src
+    path.join(process.cwd(), 'public', 'whatsapp-qr.png'), // Absolute path from working directory
+  ];
+  
+  for (const qrPath of possiblePaths) {
+    if (fs.existsSync(qrPath)) {
+      return res.sendFile(qrPath);
+    }
   }
+  
+  res.status(404).send('QR Code not available. WhatsApp bot may not be initialized or already connected.');
 });
 
 // WhatsApp QR Code page
 app.get('/whatsapp-qr-page', (req, res) => {
+  const isBotEnabled = process.env.ENABLE_WHATSAPP_BOT === 'true';
+  
   res.send(`
     <!DOCTYPE html>
     <html>
@@ -294,6 +304,7 @@ app.get('/whatsapp-qr-page', (req, res) => {
           border-radius: 20px;
           box-shadow: 0 10px 40px rgba(0,0,0,0.2);
           text-align: center;
+          max-width: 500px;
         }
         h1 {
           color: #128C7E;
@@ -325,17 +336,46 @@ app.get('/whatsapp-qr-page', (req, res) => {
         .refresh-btn:hover {
           background: #128C7E;
         }
+        .error {
+          color: red;
+          padding: 20px;
+          background: #fee;
+          border-radius: 10px;
+          margin: 20px 0;
+        }
+        .warning {
+          color: #856404;
+          background: #fff3cd;
+          padding: 20px;
+          border-radius: 10px;
+          margin: 20px 0;
+        }
       </style>
     </head>
     <body>
       <div class="container">
         <h1>📱 WhatsApp QR Code</h1>
-        <div class="qr-container">
-          <img src="/whatsapp-qr" alt="WhatsApp QR Code" onerror="this.style.display='none'; document.getElementById('error').style.display='block';">
-          <div id="error" style="display:none; color: red; padding: 20px;">
-            QR Code not available. Make sure WhatsApp bot is enabled (ENABLE_WHATSAPP_BOT=true) and the server has been restarted.
+        ${!isBotEnabled ? `
+          <div class="warning">
+            <strong>⚠️ WhatsApp Bot is Disabled</strong><br><br>
+            The WhatsApp bot is not enabled. To enable it:<br>
+            1. Go to your Render dashboard<br>
+            2. Add environment variable: <code>ENABLE_WHATSAPP_BOT=true</code><br>
+            3. Trigger a new deployment<br>
+            4. Refresh this page after deployment
           </div>
-        </div>
+        ` : `
+          <div class="qr-container">
+            <img src="/whatsapp-qr" alt="WhatsApp QR Code" onerror="this.style.display='none'; document.getElementById('error').style.display='block'; document.getElementById('loading').style.display='none';">
+            <div id="loading" style="color: #666;">Loading QR code...</div>
+            <div id="error" style="display:none; color: red; padding: 20px;">
+              QR Code not available. This could mean:<br>
+              - The bot is still initializing (wait a few seconds and refresh)<br>
+              - The bot is already connected to WhatsApp<br>
+              - There was an error initializing the bot
+            </div>
+          </div>
+        `}
         <button class="refresh-btn" onclick="location.reload()">Refresh QR Code</button>
         <div class="instructions">
           <h3>How to connect:</h3>
