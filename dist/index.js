@@ -252,6 +252,97 @@ app.get('/health/detailed', async (req, res) => {
         });
     }
 });
+// WhatsApp QR Code endpoint
+app.get('/whatsapp-qr', (req, res) => {
+    const qrPath = path_1.default.join(__dirname, 'public', 'whatsapp-qr.png');
+    if (fs_1.default.existsSync(qrPath)) {
+        res.sendFile(qrPath);
+    }
+    else {
+        res.status(404).send('QR Code not available. WhatsApp bot may not be initialized or already connected.');
+    }
+});
+// WhatsApp QR Code page
+app.get('/whatsapp-qr-page', (req, res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>WhatsApp QR Code</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          margin: 0;
+          background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        }
+        .container {
+          background: white;
+          padding: 40px;
+          border-radius: 20px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+          text-align: center;
+        }
+        h1 {
+          color: #128C7E;
+          margin-bottom: 20px;
+        }
+        .qr-container {
+          margin: 20px 0;
+        }
+        img {
+          max-width: 300px;
+          border: 2px solid #128C7E;
+          border-radius: 10px;
+        }
+        .instructions {
+          color: #666;
+          margin-top: 20px;
+          text-align: left;
+        }
+        .refresh-btn {
+          background: #25D366;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          margin-top: 20px;
+          font-size: 16px;
+        }
+        .refresh-btn:hover {
+          background: #128C7E;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>📱 WhatsApp QR Code</h1>
+        <div class="qr-container">
+          <img src="/whatsapp-qr" alt="WhatsApp QR Code" onerror="this.style.display='none'; document.getElementById('error').style.display='block';">
+          <div id="error" style="display:none; color: red; padding: 20px;">
+            QR Code not available. Make sure WhatsApp bot is enabled (ENABLE_WHATSAPP_BOT=true) and the server has been restarted.
+          </div>
+        </div>
+        <button class="refresh-btn" onclick="location.reload()">Refresh QR Code</button>
+        <div class="instructions">
+          <h3>How to connect:</h3>
+          <ol>
+            <li>Open WhatsApp on your phone</li>
+            <li>Go to Settings → Linked Devices</li>
+            <li>Tap "Link a Device"</li>
+            <li>Scan this QR code</li>
+          </ol>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`WhatsApp Delivery Platform server running on port ${PORT}`);
