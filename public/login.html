@@ -146,7 +146,7 @@
         <form id="loginForm">
             <div class="form-group">
                 <label for="userType">User Type</label>
-                <select id="userType" name="userType" required>
+                <select id="userType" name="userType" required onchange="updateFormFields()">
                     <option value="">Select user type</option>
                     <option value="driver">Driver</option>
                     <option value="vendor">Vendor</option>
@@ -154,9 +154,9 @@
                 </select>
             </div>
 
-            <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number">
+            <div class="form-group" id="phoneGroup">
+                <label for="phone" id="phoneLabel">Phone Number</label>
+                <input type="tel" id="phone" name="phone" placeholder="Enter your phone number">
             </div>
 
             <div class="form-group">
@@ -177,6 +177,25 @@
 
     <script>
         const API_BASE = '/api';
+        
+        function updateFormFields() {
+            const userType = document.getElementById('userType').value;
+            const phoneGroup = document.getElementById('phoneGroup');
+            const phoneLabel = document.getElementById('phoneLabel');
+            const phoneInput = document.getElementById('phone');
+            
+            if (userType === 'admin') {
+                phoneLabel.textContent = 'Email';
+                phoneInput.type = 'email';
+                phoneInput.placeholder = 'Enter your email';
+                phoneInput.required = true;
+            } else {
+                phoneLabel.textContent = 'Phone Number';
+                phoneInput.type = 'tel';
+                phoneInput.placeholder = 'Enter your phone number';
+                phoneInput.required = true;
+            }
+        }
         
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
