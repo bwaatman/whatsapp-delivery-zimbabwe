@@ -50,7 +50,7 @@ export class OrderEconomicsService {
 
       if (error) {
         console.error('❌ Error fetching platform config:', error);
-        // Return default values
+        // Return default values optimized for 30-minute food delivery
         return {
           vendor_commission_rate: 12,
           driver_delivery_rate: 85,
@@ -58,9 +58,9 @@ export class OrderEconomicsService {
           min_payout_amount: 100,
           service_fee: 10,
           vehicle_restrictions: {
-            bicycle: { max_distance_km: 3, max_weight_kg: 5, max_eta_minutes: 25 },
-            motorbike: { max_distance_km: 15, max_weight_kg: 25, max_eta_minutes: 45 },
-            car: { max_distance_km: 999, max_weight_kg: 999, max_eta_minutes: 999 }
+            bicycle: { max_distance_km: 5, max_weight_kg: 5, max_eta_minutes: 30 },
+            motorbike: { max_distance_km: 8, max_weight_kg: 25, max_eta_minutes: 30 },
+            car: { max_distance_km: 10, max_weight_kg: 999, max_eta_minutes: 30 }
           },
           bicycle_pickup_radius_km: 2
         };
@@ -73,22 +73,22 @@ export class OrderEconomicsService {
         });
       }
 
-      // Parse vehicle restrictions from config
+      // Parse vehicle restrictions from config (optimized for 30-minute food delivery)
       const vehicleRestrictions: Record<string, VehicleRestriction> = {
         bicycle: {
-          max_distance_km: parseFloat(configMap['bicycle_max_distance'] || '3'),
+          max_distance_km: parseFloat(configMap['bicycle_max_distance'] || '5'),
           max_weight_kg: parseFloat(configMap['bicycle_max_weight'] || '5'),
-          max_eta_minutes: parseFloat(configMap['bicycle_max_eta'] || '25')
+          max_eta_minutes: parseFloat(configMap['bicycle_max_eta'] || '30')
         },
         motorbike: {
-          max_distance_km: parseFloat(configMap['motorbike_max_distance'] || '15'),
+          max_distance_km: parseFloat(configMap['motorbike_max_distance'] || '8'),
           max_weight_kg: parseFloat(configMap['motorbike_max_weight'] || '25'),
-          max_eta_minutes: parseFloat(configMap['motorbike_max_eta'] || '45')
+          max_eta_minutes: parseFloat(configMap['motorbike_max_eta'] || '30')
         },
         car: {
-          max_distance_km: parseFloat(configMap['car_max_distance'] || '999'),
+          max_distance_km: parseFloat(configMap['car_max_distance'] || '10'),
           max_weight_kg: parseFloat(configMap['car_max_weight'] || '999'),
-          max_eta_minutes: parseFloat(configMap['car_max_eta'] || '999')
+          max_eta_minutes: parseFloat(configMap['car_max_eta'] || '30')
         }
       };
 
@@ -123,9 +123,9 @@ export class OrderEconomicsService {
         min_payout_amount: 100,
         service_fee: 10,
         vehicle_restrictions: {
-          bicycle: { max_distance_km: 3, max_weight_kg: 5, max_eta_minutes: 25 },
-          motorbike: { max_distance_km: 15, max_weight_kg: 25, max_eta_minutes: 45 },
-          car: { max_distance_km: 999, max_weight_kg: 999, max_eta_minutes: 999 }
+          bicycle: { max_distance_km: 5, max_weight_kg: 5, max_eta_minutes: 30 },
+          motorbike: { max_distance_km: 8, max_weight_kg: 25, max_eta_minutes: 30 },
+          car: { max_distance_km: 10, max_weight_kg: 999, max_eta_minutes: 30 }
         },
         bicycle_pickup_radius_km: 2
       };
