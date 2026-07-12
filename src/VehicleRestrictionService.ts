@@ -188,22 +188,52 @@ export class VehicleRestrictionService {
         return true;
       }
 
-      // Check bicycle pickup radius restriction
-      if (vehicleType === 'bicycle') {
-        const config = await this.orderEconomicsService.getPlatformConfig();
-        const pickupRadius = config.bicycle_pickup_radius_km;
+      // Get platform config for vehicle restrictions
+      const config = await this.orderEconomicsService.getPlatformConfig();
+      const restriction = config.vehicle_restrictions[vehicleType];
 
-        if (driver.current_location && vendorLocation) {
-          const driverToVendorDistance = this.calculateDistance(driver.current_location, vendorLocation);
-          console.log(`🚲 Bicycle driver ${driverId} distance to vendor: ${driverToVendorDistance.toFixed(2)} km (max: ${pickupRadius} km)`);
+      if (!restriction) {
+        console.warn(`⚠️ No restriction found for vehicle type: ${vehicleType} - assuming eligible`);
+        return true;
+      }
 
+      // Check driver location and calculate distances
+      if (driver.current_location && vendorLocation && customerLocation) {
+        const driverToVendorDistance = this.calculateDistance(driver.current_location, vendorLocation);
+        const vendorToCustomerDistance = this.calculateDistance(vendorLocation, customerLocation);
+        const driverToCustomerDistance = this.calculateDistance(driver.current_location, customerLocation);
+        
+        const totalDistance = driverToVendorDistance + vendorToCustomerDistance;
+        
+        console.log(`📍 Driver ${driverId} distances:`);
+        console.log(`   - Driver to vendor: ${driverToVendorDistance.toFixed(2)} km`);
+        console.log(`   - Vendor to customer: ${vendorToCustomerDistance.toFixed(2)} km`);
+        console.log(`   - Driver to customer: ${driverToCustomerDistance.toFixed(2)} km`);
+        console.log(`   - Total distance: ${totalDistance.toFixed(2)} km`);
+        console.log(`   - Max allowed: ${restriction.max_distance_km} km`);
+
+        // Check if total distance exceeds vehicle's max distance
+        if (totalDistance > restriction.max_distance_km) {
+          console.log(`❌ Driver ${driverId} is too far - total distance ${totalDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km - NOT ELIGIBLE`);
+          return false;
+        }
+
+        // Additional check: driver to customer distance should not exceed max distance
+        if (driverToCustomerDistance > restriction.max_distance_km) {
+          console.log(`❌ Driver ${driverId} is too far from customer - ${driverToCustomerDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km - NOT ELIGIBLE`);
+          return false;
+        }
+
+        // Check bicycle pickup radius restriction
+        if (vehicleType === 'bicycle') {
+          const pickupRadius = config.bicycle_pickup_radius_km;
           if (driverToVendorDistance > pickupRadius) {
             console.log(`❌ Bicycle driver ${driverId} is outside pickup radius (${driverToVendorDistance.toFixed(2)} km > ${pickupRadius} km) - NOT ELIGIBLE`);
             return false;
           }
-        } else {
-          console.warn(`⚠️ Bicycle driver ${driverId} has no current location - assuming eligible`);
         }
+      } else {
+        console.warn(`⚠️ Driver ${driverId} has no current location - assuming eligible`);
       }
 
       // Check eligibility for the driver's vehicle type (vendor to customer distance and ETA)
