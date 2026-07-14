@@ -685,6 +685,8 @@
 
         async function acceptOrder(orderId) {
             try {
+                console.log('🚀 Starting order acceptance for:', orderId);
+                
                 // Capture current location before accepting order
                 let locationData = {};
                 try {
@@ -700,22 +702,30 @@
                     return;
                 }
 
+                console.log('📤 Sending accept order request to:', `${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept`);
+                console.log('📤 Request body:', JSON.stringify(locationData));
+
                 const response = await fetch(`${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(locationData)
                 });
                 
+                console.log('📥 Response status:', response.status);
+                console.log('📥 Response ok:', response.ok);
+                
+                const responseData = await response.json();
+                console.log('📥 Response data:', responseData);
+                
                 if (response.ok) {
                     alert('Order accepted successfully!');
                     loadDashboard();
                 } else {
-                    const errorData = await response.json();
-                    alert(`Failed to accept order: ${errorData.error || 'Unknown error'}`);
+                    alert(`Failed to accept order: ${responseData.error || 'Unknown error'}`);
                 }
             } catch (error) {
-                console.error('Error accepting order:', error);
-                alert('Error accepting order');
+                console.error('❌ Error accepting order:', error);
+                alert('Error accepting order: ' + error.message);
             }
         }
 
