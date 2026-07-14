@@ -169,6 +169,8 @@ export class VehicleRestrictionService {
   ): Promise<boolean> {
     try {
       console.log(`🚗 Checking driver eligibility: ${driverId}`);
+      console.log(`   Vendor location:`, JSON.stringify(vendorLocation));
+      console.log(`   Customer location:`, JSON.stringify(customerLocation));
 
       // Get driver's vehicle type and current location
       const { data: driver, error: driverError } = await supabase
@@ -181,6 +183,9 @@ export class VehicleRestrictionService {
         console.error('❌ Error fetching driver:', driverError);
         return true; // Default to eligible on error
       }
+
+      console.log(`   Driver vehicle_type: ${driver.vehicle_type}`);
+      console.log(`   Driver current_location:`, JSON.stringify(driver.current_location));
 
       const vehicleType = driver.vehicle_type?.toLowerCase();
       if (!vehicleType) {
@@ -196,6 +201,8 @@ export class VehicleRestrictionService {
         console.warn(`⚠️ No restriction found for vehicle type: ${vehicleType} - assuming eligible`);
         return true;
       }
+
+      console.log(`   Vehicle restriction: max_distance=${restriction.max_distance_km}km, max_eta=${restriction.max_eta_minutes}min`);
 
       // Check driver location and calculate distances
       if (!driver.current_location) {
@@ -223,13 +230,13 @@ export class VehicleRestrictionService {
 
       // Check if total distance exceeds vehicle's max distance
       if (totalDistance > restriction.max_distance_km) {
-        console.log(`❌ Driver ${driverId} is too far - total distance ${totalDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km - NOT ELIGIBLE`);
+        console.log(`❌ REJECTED: Driver ${driverId} is too far - total distance ${totalDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
         return false;
       }
 
       // Additional check: driver to customer distance should not exceed max distance
       if (driverToCustomerDistance > restriction.max_distance_km) {
-        console.log(`❌ Driver ${driverId} is too far from customer - ${driverToCustomerDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km - NOT ELIGIBLE`);
+        console.log(`❌ REJECTED: Driver ${driverId} is too far from customer - ${driverToCustomerDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
         return false;
       }
 
@@ -237,7 +244,7 @@ export class VehicleRestrictionService {
       if (vehicleType === 'bicycle') {
         const pickupRadius = config.bicycle_pickup_radius_km;
         if (driverToVendorDistance > pickupRadius) {
-          console.log(`❌ Bicycle driver ${driverId} is outside pickup radius (${driverToVendorDistance.toFixed(2)} km > ${pickupRadius} km) - NOT ELIGIBLE`);
+          console.log(`❌ REJECTED: Bicycle driver ${driverId} is outside pickup radius (${driverToVendorDistance.toFixed(2)} km > ${pickupRadius} km)`);
           return false;
         }
       }
@@ -251,6 +258,9 @@ export class VehicleRestrictionService {
       );
 
       console.log(`✅ Driver ${driverId} eligibility: ${result.is_eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}`);
+      if (!result.is_eligible) {
+        console.log(`❌ REJECTED: ${result.reasons?.join(', ')}`);
+      }
       return result.is_eligible;
     } catch (error) {
       console.error('❌ Exception in isDriverEligibleForOrder:', error);
