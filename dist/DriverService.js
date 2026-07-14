@@ -204,9 +204,17 @@ class DriverService {
             return null;
         }
     }
-    async acceptOrder(orderId, driverId) {
+    async acceptOrder(orderId, driverId, latitude, longitude) {
         try {
             console.log('✅ Driver accepting order:', orderId);
+            // Update driver location if provided
+            if (latitude !== undefined && longitude !== undefined) {
+                console.log('📍 Updating driver location at order acceptance time');
+                const locationSuccess = await this.updateDriverLocation(driverId, latitude, longitude);
+                if (!locationSuccess) {
+                    console.warn('⚠️ Failed to update driver location, but continuing with order acceptance');
+                }
+            }
             // Get order details before updating
             const { data: order } = await database_1.supabase
                 .from('orders')
@@ -222,12 +230,12 @@ class DriverService {
                 console.error('❌ Order not found:', orderId);
                 return false;
             }
-            // Check vehicle eligibility before accepting
+            // Check vehicle eligibility before accepting (this will use the updated location)
             const { VehicleRestrictionService } = await Promise.resolve().then(() => __importStar(require('./VehicleRestrictionService')));
             const vehicleRestrictionService = new VehicleRestrictionService();
             const isEligible = await vehicleRestrictionService.isDriverEligibleForOrder(driverId, order.merchants.shop_location, order.delivery_location, order.estimated_preparation_time || 30);
             if (!isEligible) {
-                console.log(`❌ Driver ${driverId} is not eligible for order ${orderId} based on vehicle restrictions`);
+                console.log(`❌ Driver ${driverId} is not eligible for order ${orderId} based on distance restrictions`);
                 return false;
             }
             const { data, error } = await database_1.supabase

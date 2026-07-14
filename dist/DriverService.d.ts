@@ -74,7 +74,7 @@ export declare class DriverService {
     getDriverByPhone(phone: string): Promise<Driver | null>;
     getAvailableOrders(driverId?: string): Promise<AvailableOrder[]>;
     getDriverActiveDelivery(driverId: string): Promise<ActiveDelivery | null>;
-    acceptOrder(orderId: string, driverId: string): Promise<boolean>;
+    acceptOrder(orderId: string, driverId: string, latitude?: number, longitude?: number): Promise<boolean>;
     startDelivery(orderId: string): Promise<boolean>;
     completeDelivery(orderId: string, driverId: string): Promise<boolean>;
     updateDriverLocation(driverId: string, latitude: number, longitude: number): Promise<boolean>;

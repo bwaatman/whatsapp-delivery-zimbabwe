@@ -685,15 +685,33 @@
 
         async function acceptOrder(orderId) {
             try {
+                // Capture current location before accepting order
+                let locationData = {};
+                try {
+                    const position = await getCurrentLocation();
+                    locationData = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    console.log('📍 Location captured at order acceptance:', locationData);
+                } catch (locationError) {
+                    console.warn('⚠️ Could not capture location at acceptance:', locationError);
+                    alert('Location access is required to accept orders. Please enable location services.');
+                    return;
+                }
+
                 const response = await fetch(`${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(locationData)
                 });
                 
                 if (response.ok) {
                     alert('Order accepted successfully!');
                     loadDashboard();
                 } else {
-                    alert('Failed to accept order');
+                    const errorData = await response.json();
+                    alert(`Failed to accept order: ${errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('Error accepting order:', error);

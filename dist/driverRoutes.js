@@ -81,9 +81,10 @@ router.get('/driver/:id/active-delivery', async (req, res) => {
 // Accept an order
 router.post('/driver/:id/orders/:orderId/accept', async (req, res) => {
     try {
-        const success = await driverService.acceptOrder(getParam(req.params.orderId), getParam(req.params.id));
+        const { latitude, longitude } = req.body;
+        const success = await driverService.acceptOrder(getParam(req.params.orderId), getParam(req.params.id), latitude, longitude);
         if (!success) {
-            return res.status(400).json({ error: 'Failed to accept order' });
+            return res.status(400).json({ error: 'Failed to accept order. You may be too far from this order.' });
         }
         res.json({ success: true, message: 'Order accepted successfully' });
     }
