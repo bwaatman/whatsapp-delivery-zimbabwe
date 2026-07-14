@@ -741,7 +741,7 @@
             const isAvailable = document.getElementById('availability').checked;
             
             try {
-                // If going online, capture location first
+                // If going online, capture location first (mandatory)
                 let locationData = {};
                 if (isAvailable) {
                     try {
@@ -753,8 +753,10 @@
                         console.log('📍 Location captured:', locationData);
                     } catch (locationError) {
                         console.warn('⚠️ Could not capture location:', locationError);
-                        alert('Location access denied. Please enable location services for accurate delivery matching.');
-                        // Continue without location
+                        alert('Location access is required to go online. Please enable location services and try again.');
+                        // Revert the toggle
+                        document.getElementById('availability').checked = false;
+                        return; // Don't proceed without location
                     }
                 }
                 
