@@ -207,13 +207,17 @@ class DriverService {
     async acceptOrder(orderId, driverId, latitude, longitude) {
         try {
             console.log('✅ Driver accepting order:', orderId);
+            console.log('📍 Driver location provided:', { latitude, longitude });
+            // AGGRESSIVE CHECK: Reject if no location provided
+            if (latitude === undefined || longitude === undefined) {
+                console.log('❌ REJECTED: No location provided - location is required');
+                return false;
+            }
             // Update driver location if provided
-            if (latitude !== undefined && longitude !== undefined) {
-                console.log('📍 Updating driver location at order acceptance time');
-                const locationSuccess = await this.updateDriverLocation(driverId, latitude, longitude);
-                if (!locationSuccess) {
-                    console.warn('⚠️ Failed to update driver location, but continuing with order acceptance');
-                }
+            console.log('📍 Updating driver location at order acceptance time');
+            const locationSuccess = await this.updateDriverLocation(driverId, latitude, longitude);
+            if (!locationSuccess) {
+                console.warn('⚠️ Failed to update driver location, but continuing with order acceptance');
             }
             // Get order details before updating
             const { data: order } = await database_1.supabase
@@ -230,12 +234,31 @@ class DriverService {
                 console.error('❌ Order not found:', orderId);
                 return false;
             }
-            // Check vehicle eligibility before accepting (this will use the updated location)
+            console.log('📍 Order vendor location:', JSON.stringify(order.merchants.shop_location));
+            console.log('📍 Order customer location:', JSON.stringify(order.delivery_location));
+            // AGGRESSIVE CHECK: Simple distance calculation
             const { VehicleRestrictionService } = await Promise.resolve().then(() => __importStar(require('./VehicleRestrictionService')));
             const vehicleRestrictionService = new VehicleRestrictionService();
+            const driverLocation = { latitude, longitude };
+            const vendorLocation = order.merchants.shop_location;
+            const customerLocation = order.delivery_location;
+            const driverToVendorDistance = vehicleRestrictionService.calculateDistance(driverLocation, vendorLocation);
+            const vendorToCustomerDistance = vehicleRestrictionService.calculateDistance(vendorLocation, customerLocation);
+            const totalDistance = driverToVendorDistance + vendorToCustomerDistance;
+            console.log(`📍 AGGRESSIVE DISTANCE CHECK:`);
+            console.log(`   - Driver to vendor: ${driverToVendorDistance.toFixed(2)} km`);
+            console.log(`   - Vendor to customer: ${vendorToCustomerDistance.toFixed(2)} km`);
+            console.log(`   - Total distance: ${totalDistance.toFixed(2)} km`);
+            console.log(`   - Max allowed: 10 km (aggressive limit)`);
+            // AGGRESSIVE CHECK: Reject any order over 10km total distance
+            if (totalDistance > 10) {
+                console.log(`❌ REJECTED: Order too far - ${totalDistance.toFixed(2)} km exceeds 10 km limit`);
+                return false;
+            }
+            // Check vehicle eligibility before accepting (this will use the updated location)
             const isEligible = await vehicleRestrictionService.isDriverEligibleForOrder(driverId, order.merchants.shop_location, order.delivery_location, order.estimated_preparation_time || 30);
             if (!isEligible) {
-                console.log(`❌ Driver ${driverId} is not eligible for order ${orderId} based on distance restrictions`);
+                console.log(`❌ REJECTED: Driver ${driverId} is not eligible based on vehicle restrictions`);
                 return false;
             }
             const { data, error } = await database_1.supabase

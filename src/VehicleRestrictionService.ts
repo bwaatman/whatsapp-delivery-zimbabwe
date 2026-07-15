@@ -19,7 +19,7 @@ export class VehicleRestrictionService {
   /**
    * Calculate distance between two points using Haversine formula
    */
-  private calculateDistance(point1: any, point2: any): number {
+  public calculateDistance(point1: any, point2: any): number {
     try {
       const coords1 = point1?.coordinates || point1;
       const coords2 = point2?.coordinates || point2;
