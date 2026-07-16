@@ -12,7 +12,7 @@ function getParam(param: string | string[]): string {
 }
 
 // Test endpoint to verify deployment (must be before parameterized routes)
-router.get('/api/test-deployment-check', async (req: Request, res: Response) => {
+router.get('/test-deployment-check', async (req: Request, res: Response) => {
   try {
     console.log('🧪 TEST ENDPOINT - NEW CODE VERSION: fc0e99d');
     console.log('🧪 Cache-busting deployment is active');
