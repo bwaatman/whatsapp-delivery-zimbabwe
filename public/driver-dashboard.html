@@ -702,12 +702,19 @@
                     return;
                 }
 
-                console.log('📤 Sending accept order request to:', `${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept`);
+                // Add cache-busting timestamp
+                const timestamp = Date.now();
+                const url = `${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept?_t=${timestamp}`;
+                
+                console.log('📤 Sending accept order request to:', url);
                 console.log('📤 Request body:', JSON.stringify(locationData));
 
-                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept`, {
+                const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
                     body: JSON.stringify(locationData)
                 });
                 

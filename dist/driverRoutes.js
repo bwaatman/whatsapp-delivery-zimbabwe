@@ -81,6 +81,10 @@ router.get('/driver/:id/active-delivery', async (req, res) => {
 // Accept an order
 router.post('/driver/:id/orders/:orderId/accept', async (req, res) => {
     try {
+        // Disable caching for this endpoint
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         console.log('🚀 ORDER ACCEPTANCE - NEW CODE VERSION: 3f5221b');
         console.log('🚀 AGGRESSIVE 10KM CHECK SHOULD BE ACTIVE');
         const { latitude, longitude } = req.body;
