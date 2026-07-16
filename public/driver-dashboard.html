@@ -702,9 +702,9 @@
                     return;
                 }
 
-                // Add cache-busting timestamp
+                // Use new v2 endpoint to bypass Cloudflare caching
                 const timestamp = Date.now();
-                const url = `${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept?_t=${timestamp}`;
+                const url = `${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept-v2?_t=${timestamp}`;
                 
                 console.log('📤 Sending accept order request to:', url);
                 console.log('📤 Request body:', JSON.stringify(locationData));
