@@ -79,6 +79,23 @@ router.get('/driver/:id/active-delivery', async (req: Request, res: Response) =>
   }
 });
 
+// Test endpoint to verify deployment
+router.get('/driver/test-deployment', async (req: Request, res: Response) => {
+  try {
+    console.log('🧪 TEST ENDPOINT - NEW CODE VERSION: fc0e99d');
+    console.log('🧪 Cache-busting deployment is active');
+    res.json({ 
+      success: true, 
+      version: 'fc0e99d',
+      message: 'Cache-busting deployment is working',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Test endpoint error:', error);
+    res.status(500).json({ error: 'Test endpoint failed' });
+  }
+});
+
 // Accept an order
 router.post('/driver/:id/orders/:orderId/accept', async (req: Request, res: Response) => {
   try {
