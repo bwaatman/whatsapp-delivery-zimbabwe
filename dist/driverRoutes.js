@@ -10,6 +10,23 @@ const settlementService = new DriverSettlementService_1.DriverSettlementService(
 function getParam(param) {
     return Array.isArray(param) ? param[0] : param;
 }
+// Test endpoint to verify deployment (must be before parameterized routes)
+router.get('/api/test-deployment-check', async (req, res) => {
+    try {
+        console.log('🧪 TEST ENDPOINT - NEW CODE VERSION: fc0e99d');
+        console.log('🧪 Cache-busting deployment is active');
+        res.json({
+            success: true,
+            version: 'fc0e99d',
+            message: 'Cache-busting deployment is working',
+            timestamp: new Date().toISOString()
+        });
+    }
+    catch (error) {
+        console.error('❌ Test endpoint error:', error);
+        res.status(500).json({ error: 'Test endpoint failed' });
+    }
+});
 // Get driver by ID
 router.get('/driver/:id', async (req, res) => {
     try {
@@ -76,23 +93,6 @@ router.get('/driver/:id/active-delivery', async (req, res) => {
     catch (error) {
         console.error('Error getting active delivery:', error);
         res.status(500).json({ error: 'Failed to get active delivery' });
-    }
-});
-// Test endpoint to verify deployment
-router.get('/driver/test-deployment', async (req, res) => {
-    try {
-        console.log('🧪 TEST ENDPOINT - NEW CODE VERSION: fc0e99d');
-        console.log('🧪 Cache-busting deployment is active');
-        res.json({
-            success: true,
-            version: 'fc0e99d',
-            message: 'Cache-busting deployment is working',
-            timestamp: new Date().toISOString()
-        });
-    }
-    catch (error) {
-        console.error('❌ Test endpoint error:', error);
-        res.status(500).json({ error: 'Test endpoint failed' });
     }
 });
 // Accept an order
