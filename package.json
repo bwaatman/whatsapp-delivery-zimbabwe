@@ -11,7 +11,8 @@
     "dev:watch": "nodemon src/index.ts",
     "bot": "ts-node src/standalone-bot.ts",
     "bot:server": "ts-node src/bot-server.ts",
-    "bot:build": "node node_modules/typescript/bin/tsc src/standalone-bot.ts --outDir dist && node dist/standalone-bot.js"
+    "bot:build": "node node_modules/typescript/bin/tsc src/standalone-bot.ts --outDir dist && node dist/standalone-bot.js",
+    "railway-build": "echo 'Skipping build - using pre-compiled dist folder'"
   },
   "keywords": [],
   "author": "",

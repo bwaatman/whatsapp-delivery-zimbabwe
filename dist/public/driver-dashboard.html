@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - ZimDelivery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .driver-selector {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .driver-selector label {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .driver-selector select {
+            padding: 10px 20px;
+            border: 2px solid #00f2fe;
+            border-radius: 5px;
+            font-size: 1em;
+            min-width: 200px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            color: #333;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #00f2fe;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .section {
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-available {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-in-transit {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-accept {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-accept:hover {
+            background: #218838;
+        }
+
+        .btn-start {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-start:hover {
+            background: #e0a800;
+        }
+
+        .btn-complete {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-complete:hover {
+            background: #0069d9;
+        }
+
+        .btn-toggle {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-toggle:hover {
+            background: #5a6268;
+        }
+
+        .btn-refresh {
+            background: #00f2fe;
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background: #00d2fe;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state p {
+            font-size: 1.1em;
+        }
+
+        .order-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .order-details p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .availability-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .availability-toggle label {
+            font-weight: 600;
+        }
+
+        .category-selector {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .category-selector label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .category-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #00f2fe;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .toggle-switch input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+            pointer-events: none;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #00f2fe;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 Driver Dashboard</h1>
+            <p>ZimDelivery Driver Management</p>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Active Deliveries</h3>
+                <div class="number" id="active-deliveries">-</div>
+                <div class="label">Currently delivering</div>
+            </div>
+            <div class="stat-card">
+                <h3>Today's Deliveries</h3>
+                <div class="number" id="today-deliveries">-</div>
+                <div class="label">Completed today</div>
+            </div>
+            <div class="stat-card">
+                <h3>Available Orders</h3>
+                <div class="number" id="available-orders">-</div>
+                <div class="label">Ready for pickup</div>
+            </div>
+            <div class="stat-card">
+                <h3>Availability</h3>
+                <div class="number" id="availability-status">-</div>
+                <div class="label">Current status</div>
+            </div>
+            <div class="stat-card">
+                <h3>💰 Available Balance</h3>
+                <div class="number" id="available-balance">-</div>
+                <div class="label">Ready for payout</div>
+            </div>
+            <div class="stat-card">
+                <h3>💰 Pending Balance</h3>
+                <div class="number" id="pending-balance">-</div>
+                <div class="label">Processing</div>
+            </div>
+            <div class="stat-card">
+                <h3>💰 Total Earnings</h3>
+                <div class="number" id="total-earnings">-</div>
+                <div class="label">Lifetime earnings</div>
+            </div>
+            <div class="stat-card">
+                <h3>💰 Outstanding Debt</h3>
+                <div class="number" id="outstanding-debt">-</div>
+                <div class="label">Owed to platform</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>💰 Wallet & Earnings</h2>
+                <button class="btn btn-refresh" onclick="loadWalletInfo()">🔄 Refresh</button>
+            </div>
+            <div id="wallet-section">
+                <div class="loading">Loading wallet information...</div>
+            </div>
+            
+            <!-- Payout Amount Input -->
+            <div id="payout-amount-section" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: none;">
+                <label for="payout-amount" style="display: block; margin-bottom: 10px; font-weight: bold;">Withdrawal Amount (R):</label>
+                <input type="number" id="payout-amount" placeholder="Enter amount (leave empty for full balance)" 
+                       style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em;">
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Leave empty to withdraw full available balance</p>
+                
+                <!-- Payout Method Selection -->
+                <div style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: bold;">Payout Method:</label>
+                    <div style="display: flex; gap: 20px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="payout-method" value="bank" checked onchange="togglePayoutDetails()" style="margin-right: 8px;">
+                            Bank Transfer
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="payout-method" value="ecocash" onchange="togglePayoutDetails()" style="margin-right: 8px;">
+                            Ecocash
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Bank Details -->
+                <div id="bank-details" style="margin-top: 15px;">
+                    <label for="bank-name" style="display: block; margin-bottom: 5px; font-weight: bold;">Bank Name:</label>
+                    <input type="text" id="bank-name" placeholder="e.g., Capitec Bank" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em; margin-bottom: 10px;">
+                    
+                    <label for="account-holder" style="display: block; margin-bottom: 5px; font-weight: bold;">Account Holder Name:</label>
+                    <input type="text" id="account-holder" placeholder="Account holder name" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em; margin-bottom: 10px;">
+                    
+                    <label for="account-number" style="display: block; margin-bottom: 5px; font-weight: bold;">Account Number:</label>
+                    <input type="text" id="account-number" placeholder="Account number" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em;">
+                </div>
+                
+                <!-- Ecocash Details -->
+                <div id="ecocash-details" style="margin-top: 15px; display: none;">
+                    <label for="ecocash-number" style="display: block; margin-bottom: 5px; font-weight: bold;">Ecocash Phone Number:</label>
+                    <input type="text" id="ecocash-number" placeholder="e.g., 0775705659" 
+                           style="width: 100%; padding: 10px; border: 2px solid #00f2fe; border-radius: 5px; font-size: 1em;">
+                </div>
+                
+                <button class="btn btn-confirm" onclick="requestPayout()" id="request-payout-btn" style="margin-top: 20px; width: 100%;">Request Payout</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="availability-toggle">
+                <label for="availability">Set Availability:</label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="availability" onchange="toggleAvailability()">
+                    <span class="slider"></span>
+                </div>
+                <span id="availability-text">Unavailable</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Delivery Category</h2>
+                <button class="btn btn-refresh" onclick="saveCategory()">Save Category</button>
+            </div>
+            <div class="category-selector">
+                <label for="category-select">Select what you deliver:</label>
+                <select id="category-select">
+                    <option value="">Loading categories...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Available Orders</h2>
+                <button class="btn btn-refresh" onclick="loadDashboard()">🔄 Refresh</button>
+            </div>
+            <div id="orders-section">
+                <div class="loading">Loading dashboard...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Active Delivery</h2>
+            <div id="active-delivery-section">
+                <div class="loading">No active delivery</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentDriverId = null;
+
+        // Check if user is logged in
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.user_type !== 'driver') {
+                window.location.href = '/login';
+                return null;
+            }
+            return user;
+        }
+
+        async function loadDashboard() {
+            const user = checkAuth();
+            if (!user) return;
+
+            currentDriverId = user.id;
+
+            try {
+                // Load driver dashboard summary
+                const summaryResponse = await fetch(`${API_BASE}/driver/${currentDriverId}/dashboard`);
+                const summary = await summaryResponse.json();
+                
+                document.getElementById('active-deliveries').textContent = summary.active_deliveries || 0;
+                document.getElementById('today-deliveries').textContent = summary.today_deliveries || 0;
+                document.getElementById('availability-status').textContent = summary.is_available ? 'Available' : 'Unavailable';
+                
+                // Update availability toggle
+                document.getElementById('availability').checked = summary.is_available;
+                document.getElementById('availability-text').textContent = summary.is_available ? 'Available' : 'Unavailable';
+
+                // Load available orders
+                await loadAvailableOrders();
+                
+                // Load active delivery
+                await loadActiveDelivery();
+
+                // Load wallet information
+                await loadWalletInfo();
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('orders-section').innerHTML = 
+                    '<div class="error">Error loading dashboard data. Please make sure the server is running.</div>';
+            }
+        }
+
+        async function loadAvailableOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/driver/orders/available`);
+                const orders = await response.json();
+                
+                document.getElementById('available-orders').textContent = orders.length;
+                
+                if (orders.length === 0) {
+                    document.getElementById('orders-section').innerHTML = 
+                        '<div class="empty-state"><p>🎉 No available orders</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Pickup Location</th><th>Delivery Location</th><th>Actions</th></tr></thead><tbody>';
+                
+                orders.forEach(order => {
+                    // Parse delivery location if it's a GeoJSON object
+                    let deliveryLocation = 'N/A';
+                    let deliveryCoords = null;
+                    if (order.delivery_location) {
+                        try {
+                            if (typeof order.delivery_location === 'string') {
+                                const loc = JSON.parse(order.delivery_location);
+                                if (loc.coordinates) {
+                                    const lat = loc.coordinates[1].toFixed(4);
+                                    const lng = loc.coordinates[0].toFixed(4);
+                                    deliveryCoords = `${lat},${lng}`;
+                                    deliveryLocation = `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" style="color: #00f2fe; text-decoration: none;">📍 Open in Maps</a>`;
+                                }
+                            } else if (order.delivery_location.coordinates) {
+                                const lat = order.delivery_location.coordinates[1].toFixed(4);
+                                const lng = order.delivery_location.coordinates[0].toFixed(4);
+                                deliveryCoords = `${lat},${lng}`;
+                                deliveryLocation = `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" style="color: #00f2fe; text-decoration: none;">📍 Open in Maps</a>`;
+                            }
+                        } catch (e) {
+                            deliveryLocation = 'Invalid location data';
+                        }
+                    }
+                    
+                    html += `
+                        <tr>
+                            <td>${order.id.substring(0, 8)}...</td>
+                            <td>${order.customer_name || order.customer_phone || 'N/A'}</td>
+                            <td>${order.shop_address || 'N/A'}</td>
+                            <td>${deliveryLocation}</td>
+                            <td>
+                                <button class="btn btn-accept" onclick="acceptOrder('${order.id}')">Accept</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('orders-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                document.getElementById('orders-section').innerHTML = 
+                    '<div class="error">Error loading available orders</div>';
+            }
+        }
+
+        async function loadActiveDelivery() {
+            try {
+                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/active-delivery`);
+                const delivery = await response.json();
+                
+                if (!delivery || Object.keys(delivery).length === 0) {
+                    document.getElementById('active-delivery-section').innerHTML = 
+                        '<div class="empty-state"><p>No active delivery</p></div>';
+                    return;
+                }
+
+                // Parse delivery location if it's a GeoJSON object
+                let deliveryLocation = 'N/A';
+                if (delivery.delivery_location) {
+                    try {
+                        if (typeof delivery.delivery_location === 'string') {
+                            const loc = JSON.parse(delivery.delivery_location);
+                            if (loc.coordinates) {
+                                const lat = loc.coordinates[1].toFixed(4);
+                                const lng = loc.coordinates[0].toFixed(4);
+                                deliveryLocation = `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" style="color: #00f2fe; text-decoration: none;">📍 Open in Maps</a>`;
+                            }
+                        } else if (delivery.delivery_location.coordinates) {
+                            const lat = delivery.delivery_location.coordinates[1].toFixed(4);
+                            const lng = delivery.delivery_location.coordinates[0].toFixed(4);
+                            deliveryLocation = `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" style="color: #00f2fe; text-decoration: none;">📍 Open in Maps</a>`;
+                        }
+                    } catch (e) {
+                        deliveryLocation = 'Invalid location data';
+                    }
+                }
+
+                if (!delivery || !delivery.order_id) {
+                    document.getElementById('active-delivery-section').innerHTML = 
+                        '<div class="empty-state"><p>No active delivery</p></div>';
+                    return;
+                }
+
+                let html = `
+                    <div class="order-details">
+                        <p><strong>Order ID:</strong> ${delivery.order_id.substring(0, 8)}...</p>
+                        <p><strong>Customer:</strong> ${delivery.customer_name || delivery.customer_phone || 'N/A'}</p>
+                        <p><strong>Pickup:</strong> ${delivery.shop_address || 'N/A'}</p>
+                        <p><strong>Delivery Location:</strong> ${deliveryLocation}</p>
+                        <p><strong>Status:</strong> <span class="status-badge status-in-transit">${delivery.status}</span></p>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-start" onclick="startDelivery('${delivery.order_id}')">Start Delivery</button>
+                        <button class="btn btn-complete" onclick="completeDelivery('${delivery.order_id}')">Complete Delivery</button>
+                    </div>
+                `;
+                
+                document.getElementById('active-delivery-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading active delivery:', error);
+                document.getElementById('active-delivery-section').innerHTML = 
+                    '<div class="error">Error loading active delivery</div>';
+            }
+        }
+
+        async function acceptOrder(orderId) {
+            try {
+                console.log('🚀 Starting order acceptance for:', orderId);
+                
+                // Capture current location before accepting order
+                let locationData = {};
+                try {
+                    const position = await getCurrentLocation();
+                    locationData = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    console.log('📍 Location captured at order acceptance:', locationData);
+                } catch (locationError) {
+                    console.warn('⚠️ Could not capture location at acceptance:', locationError);
+                    alert('Location access is required to accept orders. Please enable location services.');
+                    return;
+                }
+
+                // Use new v2 endpoint to bypass Cloudflare caching
+                const timestamp = Date.now();
+                const url = `${API_BASE}/driver/${currentDriverId}/orders/${orderId}/accept-v2?_t=${timestamp}`;
+                
+                console.log('📤 Sending accept order request to:', url);
+                console.log('📤 Request body:', JSON.stringify(locationData));
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    body: JSON.stringify(locationData)
+                });
+                
+                console.log('📥 Response status:', response.status);
+                console.log('📥 Response ok:', response.ok);
+                
+                const responseData = await response.json();
+                console.log('📥 Response data:', responseData);
+                
+                if (response.ok) {
+                    alert('Order accepted successfully!');
+                    loadDashboard();
+                } else {
+                    alert(`Failed to accept order: ${responseData.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('❌ Error accepting order:', error);
+                alert('Error accepting order: ' + error.message);
+            }
+        }
+
+        async function startDelivery(orderId) {
+            try {
+                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/orders/${orderId}/start`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('Delivery started successfully!');
+                    loadDashboard();
+                } else {
+                    alert('Failed to start delivery');
+                }
+            } catch (error) {
+                console.error('Error starting delivery:', error);
+                alert('Error starting delivery');
+            }
+        }
+
+        async function completeDelivery(orderId) {
+            try {
+                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/orders/${orderId}/complete`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('Delivery completed successfully!');
+                    loadDashboard();
+                } else {
+                    alert('Failed to complete delivery');
+                }
+            } catch (error) {
+                console.error('Error completing delivery:', error);
+                alert('Error completing delivery');
+            }
+        }
+
+        async function toggleAvailability() {
+            const isAvailable = document.getElementById('availability').checked;
+            
+            try {
+                // If going online, capture location first (mandatory)
+                let locationData = {};
+                if (isAvailable) {
+                    try {
+                        const position = await getCurrentLocation();
+                        locationData = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        };
+                        console.log('📍 Location captured:', locationData);
+                    } catch (locationError) {
+                        console.warn('⚠️ Could not capture location:', locationError);
+                        alert('Location access is required to go online. Please enable location services and try again.');
+                        // Revert the toggle
+                        document.getElementById('availability').checked = false;
+                        return; // Don't proceed without location
+                    }
+                }
+                
+                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/availability`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        isAvailable,
+                        ...locationData
+                    })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('availability-text').textContent = isAvailable ? 'Available' : 'Unavailable';
+                    alert(`Driver is now ${isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}`);
+                    // Refresh dashboard to update availability status
+                    await loadDashboard();
+                } else {
+                    alert('Failed to update availability');
+                    // Revert the toggle if failed
+                    document.getElementById('availability').checked = !isAvailable;
+                }
+            } catch (error) {
+                console.error('Error updating availability:', error);
+                alert('Error updating availability');
+                // Revert the toggle if failed
+                document.getElementById('availability').checked = !isAvailable;
+            }
+        }
+
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation is not supported by your browser'));
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => resolve(position),
+                    (error) => reject(error),
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        async function loadWalletInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/wallet/${currentDriverId}/driver`);
+                const data = await response.json();
+                
+                if (data.wallet && data.balance) {
+                    document.getElementById('available-balance').textContent = `R${data.balance.available.toFixed(2)}`;
+                    document.getElementById('pending-balance').textContent = `R${data.balance.pending.toFixed(2)}`;
+                    document.getElementById('total-earnings').textContent = `R${data.balance.total.toFixed(2)}`;
+                    
+                    // Show request payout section if available balance >= minimum payout
+                    const configResponse = await fetch(`${API_BASE}/config/platform`);
+                    const config = await configResponse.json();
+                    if (data.balance.available >= config.min_payout_amount) {
+                        document.getElementById('payout-amount-section').style.display = 'block';
+                        document.getElementById('request-payout-btn').textContent = `Request Payout (Min: R${config.min_payout_amount})`;
+                    } else {
+                        document.getElementById('payout-amount-section').style.display = 'none';
+                    }
+                }
+                
+                // Load driver debt
+                const debtResponse = await fetch(`${API_BASE}/cash/debts/${currentDriverId}`);
+                const debts = await debtResponse.json();
+                const totalDebt = debts.reduce((sum, debt) => sum + parseFloat(debt.amount_owed), 0);
+                document.getElementById('outstanding-debt').textContent = `R${totalDebt.toFixed(2)}`;
+                
+                // Load transaction history
+                const transactionsResponse = await fetch(`${API_BASE}/wallet/${data.wallet.id}/transactions`);
+                const transactions = await transactionsResponse.json();
+                
+                if (!transactions || !Array.isArray(transactions)) {
+                    document.getElementById('wallet-section').innerHTML = 
+                        '<div class="empty-state"><p>No transactions yet</p></div>';
+                    return;
+                }
+                
+                if (transactions.length === 0) {
+                    document.getElementById('wallet-section').innerHTML = 
+                        '<div class="empty-state"><p>No transactions yet</p></div>';
+                    return;
+                }
+
+                let html = '<div class="table-container"><table><thead><tr><th>Type</th><th>Amount</th><th>Balance After</th><th>Description</th><th>Date</th></tr></thead><tbody>';
+                
+                transactions.forEach(tx => {
+                    const date = new Date(tx.created_at).toLocaleDateString();
+                    html += `
+                        <tr>
+                            <td><span class="status-badge status-${tx.transaction_type}">${tx.transaction_type}</span></td>
+                            <td>R${parseFloat(tx.amount).toFixed(2)}</td>
+                            <td>R${parseFloat(tx.balance_after).toFixed(2)}</td>
+                            <td>${tx.description || 'N/A'}</td>
+                            <td>${date}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('wallet-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading wallet info:', error);
+                document.getElementById('wallet-section').innerHTML = 
+                    '<div class="error">Error loading wallet information</div>';
+            }
+        }
+
+        function togglePayoutDetails() {
+            const payoutMethod = document.querySelector('input[name="payout-method"]:checked').value;
+            const bankDetails = document.getElementById('bank-details');
+            const ecocashDetails = document.getElementById('ecocash-details');
+            
+            if (payoutMethod === 'bank') {
+                bankDetails.style.display = 'block';
+                ecocashDetails.style.display = 'none';
+            } else {
+                bankDetails.style.display = 'none';
+                ecocashDetails.style.display = 'block';
+            }
+        }
+
+        async function requestPayout() {
+            try {
+                const payoutAmountInput = document.getElementById('payout-amount');
+                const amount = payoutAmountInput.value ? parseFloat(payoutAmountInput.value) : null;
+                
+                const payoutMethod = document.querySelector('input[name="payout-method"]:checked').value;
+                let bankAccountDetails = null;
+                
+                if (payoutMethod === 'bank') {
+                    const bankName = document.getElementById('bank-name').value;
+                    const accountHolder = document.getElementById('account-holder').value;
+                    const accountNumber = document.getElementById('account-number').value;
+                    
+                    if (!bankName || !accountHolder || !accountNumber) {
+                        alert('Please fill in all bank details');
+                        return;
+                    }
+                    
+                    bankAccountDetails = {
+                        bank_name: bankName,
+                        account_holder: accountHolder,
+                        account_number: accountNumber
+                    };
+                } else {
+                    const ecocashNumber = document.getElementById('ecocash-number').value;
+                    
+                    if (!ecocashNumber) {
+                        alert('Please fill in ecocash phone number');
+                        return;
+                    }
+                    
+                    bankAccountDetails = {
+                        payment_method: 'ecocash',
+                        phone_number: ecocashNumber
+                    };
+                }
+                
+                const response = await fetch(`${API_BASE}/payouts/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userId: currentDriverId,
+                        userType: 'driver',
+                        amount: amount,
+                        payoutMethod: payoutMethod,
+                        bankAccountDetails: bankAccountDetails
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Payout request submitted successfully! It will be processed in the next payout batch.');
+                    payoutAmountInput.value = ''; // Clear the input
+                    document.getElementById('bank-name').value = '';
+                    document.getElementById('account-holder').value = '';
+                    document.getElementById('account-number').value = '';
+                    document.getElementById('ecocash-number').value = '';
+                    await loadWalletInfo();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to request payout');
+                }
+            } catch (error) {
+                console.error('Error requesting payout:', error);
+                alert('Error requesting payout');
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${API_BASE}/categories`);
+                const categories = await response.json();
+                
+                const select = document.getElementById('category-select');
+                select.innerHTML = '<option value="">Select a category...</option>';
+                
+                categories.forEach(category => {
+                    select.innerHTML += `<option value="${category.id}">${category.icon} ${category.name}</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                document.getElementById('category-select').innerHTML = 
+                    '<option value="">Error loading categories</option>';
+            }
+        }
+
+        async function loadDriverCategory() {
+            try {
+                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/category`);
+                const data = await response.json();
+                
+                if (data.category_id) {
+                    document.getElementById('category-select').value = data.category_id;
+                }
+            } catch (error) {
+                console.error('Error loading driver category:', error);
+            }
+        }
+
+        async function saveCategory() {
+            const categoryId = document.getElementById('category-select').value;
+            
+            if (!categoryId) {
+                alert('Please select a category');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/category`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ categoryId })
+                });
+                
+                if (response.ok) {
+                    alert('Category saved successfully!');
+                } else {
+                    alert('Failed to save category');
+                }
+            } catch (error) {
+                console.error('Error saving category:', error);
+                alert('Error saving category');
+            }
+        }
+
+        // Auto-load dashboard on page load
+        loadDashboard();
+        loadCategories();
+        loadDriverCategory();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (currentDriverId) {
+                loadDashboard();
+            }
+        }, 30000);
+
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>
