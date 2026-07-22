@@ -561,7 +561,7 @@
 
         async function loadAvailableOrders() {
             try {
-                const response = await fetch(`${API_BASE}/driver/orders/available`);
+                const response = await fetch(`${API_BASE}/driver/orders/available?driverId=${currentDriverId}`);
                 const orders = await response.json();
                 
                 document.getElementById('available-orders').textContent = orders.length;

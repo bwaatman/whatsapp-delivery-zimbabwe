@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home | Indiqua</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+        }
+        .accent-gradient {
+            background: linear-gradient(135deg, #006400 0%, #228B22 50%, #006400 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #006400 0%, #228B22 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand-green { color: #006400; }
+        .brand-red { color: #DC143C; }
+        .brand-yellow { color: #FFD700; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-modern {
+            background: white;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-modern:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        }
+        .nav-link {
+            position: relative;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: linear-gradient(90deg, #006400, #228B22);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .animate-fade-up {
+            animation: fadeUp 1s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+        .scroll-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .line-decoration {
+            position: relative;
+        }
+        .line-decoration::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #006400, #228B22);
+        }
+        .video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .video-container video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+        }
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="https://www.indiquaconsulting.com/index.html" class="flex items-center">
+                        <img src="image/logo.png" alt="Indiqua Logo" class="h-12 w-auto">
+                    </a>
+                </div>
+                <div class="hidden lg:flex items-center space-x-10">
+                    <a href="https://www.indiquaconsulting.com/index.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm uppercase tracking-wider">HOME</a>
+                    <a href="https://www.indiquaconsulting.com/about.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm uppercase tracking-wider">ABOUT US</a>
+                    <a href="https://www.indiquaconsulting.com/expertise.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm uppercase tracking-wider">OUR EXPERTISE</a>
+                    <a href="https://www.indiquaconsulting.com/services.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm uppercase tracking-wider">OUR SERVICES</a>
+                    <a href="https://www.indiquaconsulting.com/inovar.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm uppercase tracking-wider">INOVARPME</a>
+                    <a href="https://www.indiquaconsulting.com/contact.html" class="accent-gradient text-white px-6 py-3 text-sm font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity">CONTACT US</a>
+                </div>
+                <button id="mobile-menu-btn" class="lg:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-t">
+            <div class="px-6 py-4 space-y-3">
+                <a href="https://www.indiquaconsulting.com/index.html" class="block py-2 text-gray-700 text-sm uppercase tracking-wider">HOME</a>
+                <a href="https://www.indiquaconsulting.com/about.html" class="block py-2 text-gray-700 text-sm uppercase tracking-wider">ABOUT US</a>
+                <a href="https://www.indiquaconsulting.com/expertise.html" class="block py-2 text-gray-700 text-sm uppercase tracking-wider">OUR EXPERTISE</a>
+                <a href="https://www.indiquaconsulting.com/services.html" class="block py-2 text-gray-700 text-sm uppercase tracking-wider">OUR SERVICES</a>
+                <a href="https://www.indiquaconsulting.com/inovar.html" class="block py-2 text-gray-700 text-sm uppercase tracking-wider">INOVARPME</a>
+                <a href="https://www.indiquaconsulting.com/contact.html" class="block py-2 text-gray-900 text-sm uppercase tracking-wider font-semibold">CONTACT US</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen flex items-center relative overflow-hidden">
+        <div class="video-container">
+            <video autoplay muted loop playsinline>
+                <source src="image/hero.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div class="video-overlay"></div>
+        
+        <!-- Decorative Elements -->
+        <div class="absolute top-32 left-10 w-2 h-32 bg-green-500 opacity-60 animate-fade-up"></div>
+        <div class="absolute top-32 left-10 w-2 h-32 bg-red-500 opacity-60 animate-fade-up delay-100"></div>
+        <div class="absolute top-32 left-10 w-2 h-32 bg-yellow-400 opacity-60 animate-fade-up delay-200"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-32 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div class="animate-fade-up">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-1 bg-green-500"></div>
+                        <span class="text-green-400 text-sm uppercase tracking-widest font-semibold">Business Advisory</span>
+                    </div>
+                    <h1 class="text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6 leading-tight">
+                        Strategic<br>
+                        <span class="text-gradient">Thinking.</span>
+                    </h1>
+                    <h2 class="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white mb-8 leading-tight">
+                        Tangible<br>
+                        <span class="text-white opacity-80">Results.</span>
+                    </h2>
+                    <div class="w-24 h-1 bg-gradient-to-r from-green-500 via-red-500 to-yellow-400 mb-8"></div>
+                    <p class="text-lg text-gray-300 mb-10 leading-relaxed max-w-xl">
+                        A business advisory services firm that helps companies solve complex problems through innovative thinking.
+                    </p>
+                    <a href="https://www.indiquaconsulting.com/contact.html" class="inline-block accent-gradient text-white px-8 py-4 text-sm font-semibold uppercase tracking-wider hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">
+                        Get In Touch
+                    </a>
+                </div>
+                
+                <div class="hidden lg:block animate-fade-up delay-200">
+                    <div class="relative">
+                        <div class="absolute -top-8 -left-8 w-32 h-32 border-2 border-green-500 opacity-40 rounded-full"></div>
+                        <div class="absolute -bottom-8 -right-8 w-24 h-24 border-2 border-red-500 opacity-40 rounded-full"></div>
+                        <div class="absolute top-1/2 -right-12 w-16 h-16 border-2 border-yellow-400 opacity-40 rounded-full"></div>
+                        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-green-400 mb-2">15+</div>
+                                    <div class="text-sm text-gray-300 uppercase tracking-wider">Years</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-red-400 mb-2">200+</div>
+                                    <div class="text-sm text-gray-300 uppercase tracking-wider">Clients</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-yellow-400 mb-2">50+</div>
+                                    <div class="text-sm text-gray-300 uppercase tracking-wider">Projects</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-white mb-2">100%</div>
+                                    <div class="text-sm text-gray-300 uppercase tracking-wider">Success</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Expertise Section -->
+    <section class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="text-center mb-16 scroll-reveal">
+                <div class="flex items-center justify-center gap-4 mb-6">
+                    <div class="w-16 h-1 bg-green-500"></div>
+                    <span class="text-green-600 text-sm uppercase tracking-widest font-semibold">What We Do Best</span>
+                    <div class="w-16 h-1 bg-green-500"></div>
+                </div>
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-gray-900 mb-4">OUR EXPERTISE</h2>
+                <div class="w-24 h-1 bg-gradient-to-r from-green-500 via-red-500 to-yellow-400 mx-auto"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="group relative scroll-reveal">
+                    <div class="absolute -top-4 -left-4 w-full h-full border-2 border-green-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+                    <div class="relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform group-hover:-translate-y-2 border border-gray-100">
+                        <div class="w-16 h-16 bg-green-500 rounded-xl flex items-center justify-center mb-6 group-hover:bg-green-600 transition-colors">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Industry Expertise</h3>
+                        <p class="text-gray-600 leading-relaxed mb-6">Deep knowledge across various sectors to deliver tailored solutions that address specific industry challenges and opportunities.</p>
+                        <button onclick="toggleIndustry()" class="text-green-600 font-semibold text-sm uppercase tracking-wider hover:text-green-700 transition-colors flex items-center gap-2">
+                            <span>View Details</span>
+                            <svg id="industry-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="group relative scroll-reveal delay-100">
+                    <div class="absolute -top-4 -left-4 w-full h-full border-2 border-red-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+                    <div class="relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform group-hover:-translate-y-2 border border-gray-100">
+                        <div class="w-16 h-16 bg-red-500 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-600 transition-colors">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Service Line Expertise</h3>
+                        <p class="text-gray-600 leading-relaxed mb-6">Comprehensive service offerings designed to meet diverse business needs with precision and excellence.</p>
+                        <button onclick="toggleService()" class="text-red-600 font-semibold text-sm uppercase tracking-wider hover:text-red-700 transition-colors flex items-center gap-2">
+                            <span>View Details</span>
+                            <svg id="service-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="group relative scroll-reveal delay-200">
+                    <div class="absolute -top-4 -left-4 w-full h-full border-2 border-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+                    <div class="relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform group-hover:-translate-y-2 border border-gray-100">
+                        <div class="w-16 h-16 bg-yellow-400 rounded-xl flex items-center justify-center mb-6 group-hover:bg-yellow-500 transition-colors">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Regional Expertise</h3>
+                        <p class="text-gray-600 leading-relaxed mb-6">Strong local presence combined with global perspective to deliver solutions that work across different markets.</p>
+                        <button onclick="toggleRegional()" class="text-yellow-600 font-semibold text-sm uppercase tracking-wider hover:text-yellow-700 transition-colors flex items-center gap-2">
+                            <span>View Details</span>
+                            <svg id="regional-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Industry Expertise Details -->
+    <section id="industry-details" class="py-16 bg-gray-50 hidden">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Financial Services</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">We help our clients in the financial services industry achieve their strategic objectives, including risk management, FinTech, new products and channels, process and performance improvements, and project management.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Agribusiness</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">Our specialist services to the agribusiness sector include value chain development and improvements, and agri-finance.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Mining</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">Through the different phases of the mining projects development and mining value chain, we help our clients develop executable strategies to minimize risk & cost and maximise the value of their developments.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Manufacturing</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">In addition to implementing strategy, we work with our clients in the manufacturing sector to achieve performance improvements and to manage change.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Real Estate & Infrastructure</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">From appraisal to operations, we assist our clients through each phase of their project development, providing specialist services each step of the way to ensure they achieve their strategic objectives.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Telecoms</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">Working with our international technical partners, we provide our clients in the telecommunications sector with worldclass advisory services in the areas of performance improvement, regulation and policy, strategy and planning, and transaction support.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500 md:col-span-2 lg:col-span-3">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Social and Public Sector</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">We work with our social and government sector clients to develop effective ways of addressing issues ranging from health to agriculture, capacity building, job creation and skills development.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Line Expertise Details -->
+    <section id="service-details" class="py-16 bg-gray-50 hidden">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-red-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Strategy</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">Indiqua helps companies to deliver their strategic objectives and achieve a sustainable competitive edge.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-red-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Financial advisory</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">From capital raising to mergers and acquisitions, Indiqua offers strategic advice and transaction support to companies seeking to expand.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-red-500 md:col-span-2 lg:col-span-1">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Operations</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">In a rapidly changing environment, having the right information and making sense of it in real time could make a difference between success and failure. Indiqua helps management to understand better how each activity in their organisation impacts their competitiveness from a cost, quality and price standpoint; and more importantly how to transition into a more competitive position.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-red-500">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">Projects</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">Indiqua helps companies improve project delivery and achieve their project plans. Whether through infrastructure projects, real estate, channels, products, processes or technology, we provide solutions that reap long-term benefits for our clients.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-red-500 md:col-span-2 lg:col-span-2">
+                    <h4 class="text-xl font-bold text-gray-900 mb-3">SME Development</h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">Through InovarPME, a dedicated SME service line, Indiqua supports SME innovation, entrepreneurship and growth. We provide specialist services that assist SMEs through project ideation, feasibility, capital raising and/or project implementation. We also work with local and international financiers to provide access to finance solutions to SMEs including carrying out post-funding monitoring of the SMEs on behalf of the financiers.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Regional Expertise Details -->
+    <section id="regional-details" class="py-16 bg-gradient-to-br from-gray-50 via-white to-gray-100 hidden relative overflow-hidden">
+        <!-- Decorative Background Elements -->
+        <div class="absolute top-0 right-0 w-64 h-64 bg-green-500 opacity-5 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 w-80 h-80 bg-red-500 opacity-5 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-yellow-400 opacity-5 rounded-full blur-3xl"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h4 class="text-2xl font-bold text-gray-900 mb-6">Our Regional Presence</h4>
+                    <p class="text-gray-600 leading-relaxed mb-8">Our team currently focuses on, and is capable of, delivering projects across southern Africa. We have on-the-ground presence in Malawi, Mozambique, South Africa and Swaziland, from where we serve our clients in the entire region.</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-4 h-4 bg-yellow-400 rounded-full"></div>
+                            <span class="text-gray-700 font-medium">Malawi</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-4 h-4 bg-yellow-400 rounded-full"></div>
+                            <span class="text-gray-700 font-medium">Mozambique</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-4 h-4 bg-yellow-400 rounded-full"></div>
+                            <span class="text-gray-700 font-medium">South Africa</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-4 h-4 bg-yellow-400 rounded-full"></div>
+                            <span class="text-gray-700 font-medium">Swaziland</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <img src="image/map.png" alt="Southern Africa Regional Map" class="w-full h-auto rounded-xl shadow-lg">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-20">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 mb-16">
+                <div>
+                    <h3 class="text-3xl font-serif font-bold mb-4">INDIQUA</h3>
+                    <p class="text-gray-400">Business advisory services firm</p>
+                </div>
+                <div class="flex flex-wrap gap-6">
+                    <a href="https://www.indiquaconsulting.com/index.html" class="text-gray-400 hover:text-white transition-colors text-sm uppercase tracking-wider">HOME</a>
+                    <a href="https://www.indiquaconsulting.com/about.html" class="text-gray-400 hover:text-white transition-colors text-sm uppercase tracking-wider">ABOUT US</a>
+                    <a href="https://www.indiquaconsulting.com/expertise.html" class="text-gray-400 hover:text-white transition-colors text-sm uppercase tracking-wider">OUR EXPERTISE</a>
+                    <a href="https://www.indiquaconsulting.com/services.html" class="text-gray-400 hover:text-white transition-colors text-sm uppercase tracking-wider">OUR SERVICES</a>
+                    <a href="https://www.indiquaconsulting.com/inovar.html" class="text-gray-400 hover:text-white transition-colors text-sm uppercase tracking-wider">INOVARPME</a>
+                    <a href="https://www.indiquaconsulting.com/contact.html" class="text-gray-400 hover:text-white transition-colors text-sm uppercase tracking-wider">CONTACT US</a>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm">© Copyright Indiqua 2024. All Rights Reserved</p>
+                <p class="text-gray-500 text-sm mt-4 md:mt-0">MADE BY STOIC</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Toggle Industry Expertise details
+        function toggleIndustry() {
+            const details = document.getElementById('industry-details');
+            const arrow = document.getElementById('industry-arrow');
+            
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                details.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Toggle Service Line Expertise details
+        function toggleService() {
+            const details = document.getElementById('service-details');
+            const arrow = document.getElementById('service-arrow');
+            
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                details.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Toggle Regional Expertise details
+        function toggleRegional() {
+            const details = document.getElementById('regional-details');
+            const arrow = document.getElementById('regional-arrow');
+            
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                details.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Scroll reveal animation
+        const scrollRevealElements = document.querySelectorAll('.scroll-reveal');
+        
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        scrollRevealElements.forEach(el => revealObserver.observe(el));
+
+        // Add scroll effect to navigation
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('shadow-lg');
+            } else {
+                nav.classList.remove('shadow-lg');
+            }
+        });
+    </script>
+</body>
+</html>
