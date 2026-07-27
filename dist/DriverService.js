@@ -382,11 +382,13 @@ class DriverService {
     }
     async updateDriverLocation(driverId, latitude, longitude) {
         try {
+            console.log('� [DIAGNOSTIC] updateDriverLocation called');
+            console.log('🔍 [DIAGNOSTIC] driverId:', driverId);
+            console.log('🔍 [DIAGNOSTIC] latitude:', latitude);
+            console.log('🔍 [DIAGNOSTIC] longitude:', longitude);
             console.log('📍 Updating driver location...');
-            console.log('Driver ID:', driverId);
-            console.log('Latitude:', latitude);
-            console.log('Longitude:', longitude);
             const locationQuery = `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`;
+            console.log('🔍 [DIAGNOSTIC] locationQuery:', locationQuery);
             const { data, error } = await database_1.supabase
                 .from('drivers')
                 .update({
@@ -396,15 +398,19 @@ class DriverService {
                 .eq('id', driverId)
                 .select()
                 .single();
+            console.log('🔍 [DIAGNOSTIC] Supabase update result:', data);
+            console.log('🔍 [DIAGNOSTIC] Supabase error:', error);
             if (error) {
                 console.error('❌ Error updating driver location:', error);
                 return false;
             }
             console.log('✅ Driver location updated successfully');
+            console.log('🔍 [DIAGNOSTIC] Updated driver record:', data);
             return true;
         }
         catch (error) {
             console.error('❌ Exception in updateDriverLocation:', error);
+            console.log('🔍 [DIAGNOSTIC] Exception details:', error);
             return false;
         }
     }

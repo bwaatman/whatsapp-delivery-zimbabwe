@@ -780,7 +780,10 @@
 
         async function toggleAvailability() {
             const isAvailable = document.getElementById('availability').checked;
-            
+            console.log('🔍 [DIAGNOSTIC] toggleAvailability called');
+            console.log('🔍 [DIAGNOSTIC] isAvailable:', isAvailable);
+            console.log('🔍 [DIAGNOSTIC] currentDriverId:', currentDriverId);
+
             try {
                 // If going online, capture location first (mandatory)
                 let locationData = {};
@@ -792,36 +795,48 @@
                             longitude: position.coords.longitude
                         };
                         console.log('📍 Location captured:', locationData);
+                        console.log('🔍 [DIAGNOSTIC] Location data:', locationData);
                     } catch (locationError) {
                         console.warn('⚠️ Could not capture location:', locationError);
+                        console.log('🔍 [DIAGNOSTIC] Location capture failed:', locationError);
                         alert('Location access is required to go online. Please enable location services and try again.');
                         // Revert the toggle
                         document.getElementById('availability').checked = false;
                         return; // Don't proceed without location
                     }
                 }
-                
-                const response = await fetch(`${API_BASE}/driver/${currentDriverId}/availability`, {
+
+                const url = `${API_BASE}/driver/${currentDriverId}/availability`;
+                const requestBody = {
+                    isAvailable,
+                    ...locationData
+                };
+                console.log('🔍 [DIAGNOSTIC] PUT request URL:', url);
+                console.log('🔍 [DIAGNOSTIC] PUT request body:', requestBody);
+
+                const response = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        isAvailable,
-                        ...locationData
-                    })
+                    body: JSON.stringify(requestBody)
                 });
-                
+
+                console.log('🔍 [DIAGNOSTIC] PUT response status:', response.status);
+                console.log('🔍 [DIAGNOSTIC] PUT response ok:', response.ok);
+
                 if (response.ok) {
                     document.getElementById('availability-text').textContent = isAvailable ? 'Available' : 'Unavailable';
                     alert(`Driver is now ${isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}`);
                     // Refresh dashboard to update availability status
                     await loadDashboard();
                 } else {
+                    console.log('🔍 [DIAGNOSTIC] PUT response error');
                     alert('Failed to update availability');
                     // Revert the toggle if failed
                     document.getElementById('availability').checked = !isAvailable;
                 }
             } catch (error) {
                 console.error('Error updating availability:', error);
+                console.log('🔍 [DIAGNOSTIC] PUT request exception:', error);
                 alert('Error updating availability');
                 // Revert the toggle if failed
                 document.getElementById('availability').checked = !isAvailable;

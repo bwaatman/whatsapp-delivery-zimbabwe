@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | Indiqua</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+        }
+        .accent-gradient {
+            background: linear-gradient(135deg, #006400 0%, #228B22 50%, #006400 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #006400 0%, #228B22 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand-green { color: #006400; }
+        .brand-red { color: #DC143C; }
+        .brand-yellow { color: #FFD700; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-modern {
+            background: white;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-modern:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: linear-gradient(90deg, #006400, #228B22);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .nav-link.active::after {
+            width: 100%;
+        }
+        @keyframes fade-up {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-up {
+            animation: fade-up 0.8s ease-out forwards;
+        }
+        .delay-100 {
+            animation-delay: 0.1s;
+        }
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+        .delay-300 {
+            animation-delay: 0.3s;
+        }
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+        .scroll-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm fixed w-full z-50">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex items-center">
+                        <img src="image/logo.png" alt="Indiqua Logo" class="h-12 w-auto">
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">HOME</a>
+                    <a href="about.html" class="nav-link active text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">ABOUT US</a>
+                    <a href="expertise.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">OUR EXPERTISE</a>
+                    <a href="services.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">OUR SERVICES</a>
+                    <a href="inovar.html" class="nav-link text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">INOVARPME</a>
+                    <a href="https://www.indiquaconsulting.com/contact.html" class="accent-gradient text-white px-6 py-3 text-sm font-semibold uppercase tracking-wider hover:opacity-90 transition-all">CONTACT US</a>
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="px-6 py-4 space-y-3">
+                <a href="index.html" class="block text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">HOME</a>
+                <a href="about.html" class="block text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">ABOUT US</a>
+                <a href="expertise.html" class="block text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">OUR EXPERTISE</a>
+                <a href="services.html" class="block text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">OUR SERVICES</a>
+                <a href="inovar.html" class="block text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">INOVARPME</a>
+                <a href="https://www.indiquaconsulting.com/contact.html" class="block text-gray-700 hover:text-gray-900 text-sm font-semibold uppercase tracking-wider">CONTACT US</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="min-h-[50vh] flex items-center relative overflow-hidden pt-20">
+        <div class="hero-gradient absolute inset-0"></div>
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-green-500 rounded-full filter blur-3xl"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-red-500 rounded-full filter blur-3xl"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-yellow-500 rounded-full filter blur-3xl"></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-20 relative z-10">
+            <div class="max-w-4xl">
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-4 leading-tight animate-fade-up">
+                    ABOUT US
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed animate-fade-up delay-200">
+                    WHO WE ARE
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="py-24 bg-white">
+        <div class="w-full px-4 md:px-8 lg:px-12">
+            <div class="max-w-4xl mx-auto scroll-reveal">
+                <div class="flex items-center justify-center mb-12">
+                    <img src="image/logo.png" alt="Indiqua Logo" class="h-24 w-auto">
+                </div>
+                <p class="text-gray-600 text-lg leading-relaxed mb-8">
+                    Indiqua Consulting is a business advisory services firm that helps companies solve complex problems through innovative thinking. For more than a decade, we have helped our clients implement strategic initiatives that deliver real, long-term value across industries. Trust our people to transform your business through solutions that add real value.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Leaders Section -->
+    <section class="py-24 bg-gray-50">
+        <div class="w-full px-4 md:px-8 lg:px-12">
+            <div class="text-center mb-16 scroll-reveal">
+                <div class="flex items-center justify-center gap-4 mb-6">
+                    <div class="w-16 h-1 bg-green-500"></div>
+                    <span class="text-green-600 text-sm uppercase tracking-widest font-semibold">Our Team</span>
+                    <div class="w-16 h-1 bg-green-500"></div>
+                </div>
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-gray-900 mb-4">LEADERS</h2>
+                <div class="w-24 h-1 bg-gradient-to-r from-green-500 via-red-500 to-yellow-400 mx-auto"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Stan Chikakuda -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 scroll-reveal">
+                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Stan Chikakuda</h3>
+                    <p class="text-green-600 font-semibold mb-4">Chairman</p>
+                    <p class="text-gray-500 text-sm mb-4">BAcc (Malawi), MBA (Henley), ACCA, CA(M)</p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Stan is a chartered accountant with almost two decades post-qualification experience. He is a former investment banker and project manager at Standard Bank Mozambique and also worked as Financial Controller at Barclays Bank in Mozambique. He is Founder and Chairman of the Indiqua Group.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Stan regularly consults with some of the largest financial institutions in southern Africa, as well as ICT companies, property developers and manufacturing companies. He also advises public sector clients in the areas of infrastructure development, telecommunications and SME policy, particularly on access to finance.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Stan completed his undergraduate studies in accounting at the University of Malawi and is an alumnus of Henley Business School at the University of Reading in the UK, where earned his MBA. He is also an alumnus of the Frankfurt School of Finance and Management, where he completed a management program in SME and housing finance.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed">
+                        Apart from Indiqua Group direct subsidiaries, Stan also sits on the board of Sanlam Moçambique Vida Companhia de Seguros S.A.and he chairs the Audit, Actuarial and Risk sub-committee.
+                    </p>
+                </div>
+                
+                <!-- Wallace Siakachoma -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 scroll-reveal delay-100">
+                    <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Wallace Siakachoma</h3>
+                    <p class="text-red-600 font-semibold mb-4">Senior Partner, South Africa</p>
+                    <p class="text-gray-500 text-sm mb-4">MBA, CA(SA), FCCA, FZICA, ACA</p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        A chartered accountant with more than 20 years' post-qualification experience, Wallace leads our team in South Africa, having joined the firm as Senior Partner in February 2016. He also leads our groupwide financial services team.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Wallace previously worked as a senior finance executive at BancABC, initially in Zambia and Mozambique and then at HQ in South Africa. Prior to BancABC, he spent five years at PricewaterhouseCoopers where he specialised mostly in the financial services audits in Zambia and Kenya.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed">
+                        Wallace holds an MBA from Oxford Brookes University and is a member of the Institute of Chartered Accountants in England and Wales (ICAEW), the Association of Chartered Certified Accountants (ACCA) and the Zambia Institute of Chartered Accountants (ZICA). He is also a member of the ACCA Global Forum for Corporate Reporting, a worldwide group of ACCA members who advise the ACCA on the potential impact of new accounting standards and make recommendations to be included in ACCA's feedback to the IASB for any proposed improvements to IFRS based on feedback from industry and practice.
+                    </p>
+                </div>
+                
+                <!-- Violet Buluma -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 scroll-reveal">
+                    <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Violet Buluma</h3>
+                    <p class="text-yellow-600 font-semibold mb-4">Senior Partner, Eswatini</p>
+                    <p class="text-gray-500 text-sm mb-4">BSc (Env Sc) (Mw), MBA (Missouri State), PGDip Dev Fin (Stellenbosch)</p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Violet leads Indiqua operations in Eswatini. A former project manager, she has deep knowledge of the Eswatini market, which she brings to bear in her engagement with our clients in the public, health and financial services sectors.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Violet has previously worked as Coordinator of the Essential Health Services Package (EHCP), initiating and coordinating the rollout of an essential health care package for Eswatini to all health institutions across the country, both public and private. This included mobilising and coordinating resources from within Government and from funding partners, including the Global Fund, World Bank/EU and PEPFAR. She has also previously worked as a corporate banker at Standard Bank Eswatini, during which she used her specialist knowledge in global markets, credit risk and investor services to advise and manage relationships with the bank's large corporate clients.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        During her tenure at the Eswatini Chamber of Commerce, Violet founded the Business Women's Forum of Eswatini. She also obtained funding from the ILO for and implemented a capacity building program for SMEs at the Chamber.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed">
+                        Violet holds a BSc in Environmental Science from the University of Malawi, an MBA from Missouri State University and a postgraduate diploma in development finance from Stellenbosch University.
+                    </p>
+                </div>
+                
+                <!-- Felistas Sibweza -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 scroll-reveal delay-100">
+                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Felistas Sibweza</h3>
+                    <p class="text-green-600 font-semibold mb-4">Director, Group SME Development</p>
+                    <p class="text-gray-500 text-sm mb-4">BBA (Mlw), MSc Mgt (Leeds), PGDip Marketing (CIM)</p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Felistas heads Indiqua's SME development initiatives groupwide. Working with clients in the public and social sector, she develops holistic solutions with respect to SME policy, business development, financial inclusion, access to finance and capacity building.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed mb-4">
+                        Among others, Felistas has previously led an extensive capacity building program for Malawian private clinics under the USAID SHOPS Project. The aim of the programme is to help small, privately owned clinics to move towards greater sustainability and profitability, and to improve their capacity for growth. She has also led Indiqua's technical assistance project to the Micro Finance Unit in the Eswatini Ministry of Finance, developing a capacity building strategy for the Ministry targeted at local SMEs. This included the development of coaching, training and mentoring tools for business advisory service providers in Eswatini.
+                    </p>
+                    <p class="text-gray-600 text-base leading-relaxed">
+                        Felistas earned her undergraduate degree in business administration from University of Malawi. She earned her postgraduate degree in management from University of Leeds in the UK. She also holds a postgraduate diploma in marketing from the Chartered Institute of Marketers in the UK.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white text-gray-900 py-20 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 mb-16">
+                <div>
+                    <a href="index.html" class="flex items-center">
+                        <img src="image/logo.png" alt="Indiqua Logo" class="h-16 w-auto">
+                    </a>
+                </div>
+                <div class="flex flex-wrap gap-6">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900 transition-colors text-sm uppercase tracking-wider">HOME</a>
+                    <a href="about.html" class="text-gray-600 hover:text-gray-900 transition-colors text-sm uppercase tracking-wider">ABOUT US</a>
+                    <a href="expertise.html" class="text-gray-600 hover:text-gray-900 transition-colors text-sm uppercase tracking-wider">OUR EXPERTISE</a>
+                    <a href="services.html" class="text-gray-600 hover:text-gray-900 transition-colors text-sm uppercase tracking-wider">OUR SERVICES</a>
+                    <a href="inovar.html" class="text-gray-600 hover:text-gray-900 transition-colors text-sm uppercase tracking-wider">INOVARPME</a>
+                    <a href="https://www.indiquaconsulting.com/contact.html" class="text-gray-600 hover:text-gray-900 transition-colors text-sm uppercase tracking-wider">CONTACT US</a>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 pt-8 text-center">
+                <p class="text-gray-500 text-sm">© Copyright Indiqua 2024. All Rights Reserved</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Scroll reveal animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

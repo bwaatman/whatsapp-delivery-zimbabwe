@@ -194,16 +194,32 @@ router.put('/driver/:id/location', async (req, res) => {
 // Set driver availability
 router.put('/driver/:id/availability', async (req, res) => {
     try {
+        console.log('🔍 [DIAGNOSTIC] PUT /driver/:id/availability called');
+        console.log('🔍 [DIAGNOSTIC] req.params.id:', req.params.id);
+        console.log('🔍 [DIAGNOSTIC] req.body:', req.body);
         const { isAvailable, latitude, longitude } = req.body;
+        console.log('🔍 [DIAGNOSTIC] isAvailable:', isAvailable);
+        console.log('🔍 [DIAGNOSTIC] latitude:', latitude);
+        console.log('🔍 [DIAGNOSTIC] longitude:', longitude);
+        console.log('🔍 [DIAGNOSTIC] latitude !== undefined:', latitude !== undefined);
+        console.log('🔍 [DIAGNOSTIC] longitude !== undefined:', longitude !== undefined);
         // If location is provided and driver is going online, update location first
         if (isAvailable && latitude !== undefined && longitude !== undefined) {
             console.log('📍 Updating driver location with availability change');
+            console.log('🔍 [DIAGNOSTIC] Calling updateDriverLocation');
             const locationSuccess = await driverService.updateDriverLocation(getParam(req.params.id), latitude, longitude);
+            console.log('🔍 [DIAGNOSTIC] updateDriverLocation returned:', locationSuccess);
             if (!locationSuccess) {
                 console.warn('⚠️ Failed to update driver location, but continuing with availability update');
             }
         }
+        else {
+            console.log('🔍 [DIAGNOSTIC] Skipping location update - conditions not met');
+            console.log('🔍 [DIAGNOSTIC] isAvailable:', isAvailable, 'latitude:', latitude, 'longitude:', longitude);
+        }
+        console.log('🔍 [DIAGNOSTIC] Calling setDriverAvailability');
         const success = await driverService.setDriverAvailability(getParam(req.params.id), isAvailable);
+        console.log('🔍 [DIAGNOSTIC] setDriverAvailability returned:', success);
         if (!success) {
             return res.status(400).json({ error: 'Failed to set driver availability' });
         }
@@ -211,6 +227,7 @@ router.put('/driver/:id/availability', async (req, res) => {
     }
     catch (error) {
         console.error('Error setting driver availability:', error);
+        console.log('🔍 [DIAGNOSTIC] Exception in PUT /availability:', error);
         res.status(500).json({ error: 'Failed to set driver availability' });
     }
 });
