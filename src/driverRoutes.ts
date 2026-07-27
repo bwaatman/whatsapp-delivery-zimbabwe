@@ -74,7 +74,12 @@ router.get('/driver/:id/dashboard', async (req: Request, res: Response) => {
 router.get('/driver/orders/available', async (req: Request, res: Response) => {
   try {
     const { driverId } = req.query;
+    console.log('🔍 [DIAGNOSTIC] GET /driver/orders/available called');
+    console.log('🔍 [DIAGNOSTIC] req.query:', req.query);
+    console.log('🔍 [DIAGNOSTIC] driverId received:', driverId);
+    console.log('🔍 [DIAGNOSTIC] driverId type:', typeof driverId);
     const orders = await driverService.getAvailableOrders(driverId as string);
+    console.log('🔍 [DIAGNOSTIC] Orders returned from service:', orders.length);
     res.json(orders);
   } catch (error) {
     console.error('Error getting available orders:', error);

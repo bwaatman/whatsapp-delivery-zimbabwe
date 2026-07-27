@@ -561,8 +561,14 @@
 
         async function loadAvailableOrders() {
             try {
-                const response = await fetch(`${API_BASE}/driver/orders/available?driverId=${currentDriverId}`);
+                console.log('🔍 [DIAGNOSTIC] loadAvailableOrders called');
+                console.log('🔍 [DIAGNOSTIC] currentDriverId:', currentDriverId);
+                const url = `${API_BASE}/driver/orders/available?driverId=${currentDriverId}`;
+                console.log('🔍 [DIAGNOSTIC] Request URL:', url);
+                const response = await fetch(url);
+                console.log('🔍 [DIAGNOSTIC] Response status:', response.status);
                 const orders = await response.json();
+                console.log('🔍 [DIAGNOSTIC] Orders received:', orders.length);
                 
                 document.getElementById('available-orders').textContent = orders.length;
                 

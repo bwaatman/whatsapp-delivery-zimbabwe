@@ -168,9 +168,10 @@ export class VehicleRestrictionService {
     estimatedPreparationTime: number = 30
   ): Promise<boolean> {
     try {
-      console.log(`🚗 Checking driver eligibility: ${driverId}`);
-      console.log(`   Vendor location:`, JSON.stringify(vendorLocation));
-      console.log(`   Customer location:`, JSON.stringify(customerLocation));
+      console.log(`� [DIAGNOSTIC] isDriverEligibleForOrder called`);
+      console.log(`🔍 [DIAGNOSTIC] driverId: ${driverId}`);
+      console.log(`🔍 [DIAGNOSTIC] vendorLocation:`, JSON.stringify(vendorLocation));
+      console.log(`🔍 [DIAGNOSTIC] customerLocation:`, JSON.stringify(customerLocation));
 
       // Get driver's vehicle type and current location
       const { data: driver, error: driverError } = await supabase
@@ -180,16 +181,19 @@ export class VehicleRestrictionService {
         .single();
 
       if (driverError || !driver) {
-        console.error('❌ Error fetching driver:', driverError);
+        console.error('❌ [DIAGNOSTIC] Error fetching driver:', driverError);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: TRUE (default on error)');
         return true; // Default to eligible on error
       }
 
-      console.log(`   Driver vehicle_type: ${driver.vehicle_type}`);
-      console.log(`   Driver current_location:`, JSON.stringify(driver.current_location));
+      console.log(`🔍 [DIAGNOSTIC] Driver found in database`);
+      console.log(`🔍 [DIAGNOSTIC] Driver vehicle_type: ${driver.vehicle_type}`);
+      console.log(`🔍 [DIAGNOSTIC] Driver current_location:`, JSON.stringify(driver.current_location));
 
       const vehicleType = driver.vehicle_type?.toLowerCase();
       if (!vehicleType) {
-        console.warn('⚠️ Driver has no vehicle type - assuming eligible');
+        console.warn('⚠️ [DIAGNOSTIC] Driver has no vehicle type - assuming eligible');
+        console.log('🔍 [DIAGNOSTIC] RETURNING: TRUE (no vehicle type)');
         return true;
       }
 
@@ -198,45 +202,54 @@ export class VehicleRestrictionService {
       const restriction = config.vehicle_restrictions[vehicleType];
 
       if (!restriction) {
-        console.warn(`⚠️ No restriction found for vehicle type: ${vehicleType} - assuming eligible`);
+        console.warn(`⚠️ [DIAGNOSTIC] No restriction found for vehicle type: ${vehicleType} - assuming eligible`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: TRUE (no restriction config)');
         return true;
       }
 
-      console.log(`   Vehicle restriction: max_distance=${restriction.max_distance_km}km, max_eta=${restriction.max_eta_minutes}min`);
+      console.log(`🔍 [DIAGNOSTIC] Vehicle restriction config: max_distance=${restriction.max_distance_km}km, max_eta=${restriction.max_eta_minutes}min`);
 
       // Check driver location and calculate distances
       if (!driver.current_location) {
-        console.warn(`⚠️ Driver ${driverId} has no current location - NOT ELIGIBLE for any orders`);
+        console.warn(`⚠️ [DIAGNOSTIC] Driver ${driverId} has no current location - NOT ELIGIBLE for any orders`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (no driver location)');
         return false; // Require location for order eligibility
       }
 
       if (!vendorLocation || !customerLocation) {
-        console.warn(`⚠️ Order has missing location data - NOT ELIGIBLE`);
+        console.warn(`⚠️ [DIAGNOSTIC] Order has missing location data - NOT ELIGIBLE`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (missing order location)');
         return false;
       }
 
       const driverToVendorDistance = this.calculateDistance(driver.current_location, vendorLocation);
       const vendorToCustomerDistance = this.calculateDistance(vendorLocation, customerLocation);
       const driverToCustomerDistance = this.calculateDistance(driver.current_location, customerLocation);
-      
+
       const totalDistance = driverToVendorDistance + vendorToCustomerDistance;
-      
-      console.log(`📍 Driver ${driverId} distances:`);
-      console.log(`   - Driver to vendor: ${driverToVendorDistance.toFixed(2)} km`);
-      console.log(`   - Vendor to customer: ${vendorToCustomerDistance.toFixed(2)} km`);
-      console.log(`   - Driver to customer: ${driverToCustomerDistance.toFixed(2)} km`);
-      console.log(`   - Total distance: ${totalDistance.toFixed(2)} km`);
-      console.log(`   - Max allowed: ${restriction.max_distance_km} km`);
+
+      console.log(`🔍 [DIAGNOSTIC] Distance calculations:`);
+      console.log(`� [DIAGNOSTIC] - Driver coordinates:`, JSON.stringify(driver.current_location));
+      console.log(`🔍 [DIAGNOSTIC] - Vendor coordinates:`, JSON.stringify(vendorLocation));
+      console.log(`🔍 [DIAGNOSTIC] - Customer coordinates:`, JSON.stringify(customerLocation));
+      console.log(`🔍 [DIAGNOSTIC] - Driver to vendor: ${driverToVendorDistance.toFixed(2)} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Vendor to customer: ${vendorToCustomerDistance.toFixed(2)} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Driver to customer: ${driverToCustomerDistance.toFixed(2)} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Total distance: ${totalDistance.toFixed(2)} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Max allowed distance: ${restriction.max_distance_km} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Vehicle type: ${vehicleType}`);
 
       // Check if total distance exceeds vehicle's max distance
       if (totalDistance > restriction.max_distance_km) {
-        console.log(`❌ REJECTED: Driver ${driverId} is too far - total distance ${totalDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
+        console.log(`❌ [DIAGNOSTIC] REJECTED: Total distance ${totalDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (total distance too far)');
         return false;
       }
 
       // Additional check: driver to customer distance should not exceed max distance
       if (driverToCustomerDistance > restriction.max_distance_km) {
-        console.log(`❌ REJECTED: Driver ${driverId} is too far from customer - ${driverToCustomerDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
+        console.log(`❌ [DIAGNOSTIC] REJECTED: Driver to customer distance ${driverToCustomerDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (driver to customer too far)');
         return false;
       }
 
@@ -244,7 +257,8 @@ export class VehicleRestrictionService {
       if (vehicleType === 'bicycle') {
         const pickupRadius = config.bicycle_pickup_radius_km;
         if (driverToVendorDistance > pickupRadius) {
-          console.log(`❌ REJECTED: Bicycle driver ${driverId} is outside pickup radius (${driverToVendorDistance.toFixed(2)} km > ${pickupRadius} km)`);
+          console.log(`❌ [DIAGNOSTIC] REJECTED: Bicycle driver outside pickup radius (${driverToVendorDistance.toFixed(2)} km > ${pickupRadius} km)`);
+          console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (bicycle pickup radius)');
           return false;
         }
       }
@@ -257,13 +271,16 @@ export class VehicleRestrictionService {
         estimatedPreparationTime
       );
 
-      console.log(`✅ Driver ${driverId} eligibility: ${result.is_eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}`);
+      console.log(`🔍 [DIAGNOSTIC] checkOrderEligibility result:`, result);
+      console.log(`🔍 [DIAGNOSTIC] Final eligibility: ${result.is_eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}`);
       if (!result.is_eligible) {
-        console.log(`❌ REJECTED: ${result.reasons?.join(', ')}`);
+        console.log(`🔍 [DIAGNOSTIC] Rejection reasons:`, result.reasons);
       }
+      console.log(`🔍 [DIAGNOSTIC] RETURNING: ${result.is_eligible}`);
       return result.is_eligible;
     } catch (error) {
-      console.error('❌ Exception in isDriverEligibleForOrder:', error);
+      console.error('❌ [DIAGNOSTIC] Exception in isDriverEligibleForOrder:', error);
+      console.log('🔍 [DIAGNOSTIC] RETURNING: TRUE (exception default)');
       return true; // Default to eligible on error
     }
   }

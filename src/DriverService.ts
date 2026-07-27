@@ -133,7 +133,10 @@ export class DriverService {
 
   async getAvailableOrders(driverId?: string): Promise<AvailableOrder[]> {
     try {
-      console.log('📋 Getting available orders for drivers...');
+      console.log('� [DIAGNOSTIC] getAvailableOrders called');
+      console.log('🔍 [DIAGNOSTIC] driverId parameter:', driverId);
+      console.log('🔍 [DIAGNOSTIC] driverId type:', typeof driverId);
+      console.log('🔍 [DIAGNOSTIC] driverId truthy:', !!driverId);
 
       const { data, error } = await supabase
         .from('orders')
@@ -162,6 +165,8 @@ export class DriverService {
         return [];
       }
 
+      console.log('🔍 [DIAGNOSTIC] Raw orders from database:', data.length);
+
       // Transform the data to match AvailableOrder interface
       const orders = data.map((order: any) => ({
         id: order.id,
@@ -178,12 +183,16 @@ export class DriverService {
         status: order.status
       })) as AvailableOrder[];
 
+      console.log('🔍 [DIAGNOSTIC] Transformed orders:', orders.length);
+
       // If driverId is provided, filter orders based on vehicle eligibility
       if (driverId) {
+        console.log('🔍 [DIAGNOSTIC] driverId is truthy - ENTERING FILTERING LOOP');
         const vehicleRestrictionService = new VehicleRestrictionService();
         const eligibleOrders: AvailableOrder[] = [];
 
         for (const order of orders) {
+          console.log(`🔍 [DIAGNOSTIC] Evaluating order ${order.id} for driver ${driverId}`);
           const isEligible = await vehicleRestrictionService.isDriverEligibleForOrder(
             driverId,
             order.shop_location,
@@ -193,16 +202,21 @@ export class DriverService {
 
           if (isEligible) {
             eligibleOrders.push(order);
+            console.log(`🔍 [DIAGNOSTIC] Order ${order.id} - ELIGIBLE`);
           } else {
             console.log(`🚗 Order ${order.id} is not eligible for driver ${driverId} - filtering out`);
           }
         }
 
         console.log(`✅ Retrieved ${eligibleOrders.length} eligible orders for driver ${driverId} (filtered from ${orders.length} total)`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING FILTERED ORDERS:', eligibleOrders.length);
         return eligibleOrders;
+      } else {
+        console.log('🔍 [DIAGNOSTIC] driverId is falsy - SKIPPING FILTERING, RETURNING ALL ORDERS');
       }
 
       console.log(`✅ Retrieved ${orders.length} available orders`);
+      console.log('🔍 [DIAGNOSTIC] RETURNING ALL ORDERS:', orders.length);
       return orders;
     } catch (error) {
       console.error('❌ Exception in getAvailableOrders:', error);
