@@ -7,7 +7,7 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
-    autoDeploy: false
+    autoDeploy: true
     publishDir: .
     envVars:
       - key: SUPABASE_URL
