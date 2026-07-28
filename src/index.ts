@@ -94,6 +94,10 @@ app.get('/driver', (req, res) => {
   console.log('🔍 Driver dashboard request. Path:', filePath);
   console.log('🔍 File exists:', fs.existsSync(filePath));
   if (fs.existsSync(filePath)) {
+    // Set cache-busting headers
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(filePath);
   } else {
     console.log('❌ Driver dashboard file not found at:', filePath);

@@ -91,6 +91,10 @@ app.get('/driver', (req, res) => {
     console.log('🔍 Driver dashboard request. Path:', filePath);
     console.log('🔍 File exists:', fs_1.default.existsSync(filePath));
     if (fs_1.default.existsSync(filePath)) {
+        // Set cache-busting headers
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.sendFile(filePath);
     }
     else {
