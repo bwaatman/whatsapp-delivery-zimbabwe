@@ -87,7 +87,7 @@ app.get('/vendor', (req, res) => {
     }
 });
 app.get('/driver', (req, res) => {
-    const filePath = path_1.default.join(finalPublicPath, 'driver-dashboard.html');
+    const filePath = path_1.default.join(finalPublicPath, 'driver-dashboard-v2.html');
     console.log('🔍 Driver dashboard request. Path:', filePath);
     console.log('🔍 File exists:', fs_1.default.existsSync(filePath));
     if (fs_1.default.existsSync(filePath)) {
