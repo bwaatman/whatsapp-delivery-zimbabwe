@@ -48,25 +48,27 @@ app.use((req, res, next) => {
 });
 
 // Serve static files (dashboards)
-const publicPath = path.join(__dirname, 'public');
-console.log('Serving static files from:', publicPath);
-console.log('Public directory exists:', fs.existsSync(publicPath));
+const publicPath = path.join(__dirname, '..', 'public');
+const distPublicPath = path.join(__dirname, 'public');
+const finalPublicPath = fs.existsSync(distPublicPath) ? distPublicPath : publicPath;
+console.log('Serving static files from:', finalPublicPath);
+console.log('Public directory exists:', fs.existsSync(finalPublicPath));
 
 // Dashboard routes - serve HTML files directly
 app.get('/admin', (req, res) => {
-  const filePath = path.join(publicPath, 'admin-dashboard.html');
+  const filePath = path.join(finalPublicPath, 'admin-dashboard.html');
   console.log('🔍 Admin dashboard request. Path:', filePath);
   console.log('🔍 File exists:', fs.existsSync(filePath));
-  console.log('🔍 Public directory:', publicPath);
+  console.log('🔍 Public directory:', finalPublicPath);
   console.log('🔍 __dirname:', __dirname);
-  
+
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
     console.log('❌ Admin dashboard file not found at:', filePath);
     console.log('❌ Listing public directory contents:');
     try {
-      const files = fs.readdirSync(publicPath);
+      const files = fs.readdirSync(finalPublicPath);
       console.log('Files in public:', files);
     } catch (e) {
       console.log('❌ Cannot read public directory:', e);
@@ -76,7 +78,7 @@ app.get('/admin', (req, res) => {
 });
 
 app.get('/vendor', (req, res) => {
-  const filePath = path.join(publicPath, 'vendor-dashboard.html');
+  const filePath = path.join(finalPublicPath, 'vendor-dashboard.html');
   console.log('🔍 Vendor dashboard request. Path:', filePath);
   console.log('🔍 File exists:', fs.existsSync(filePath));
   if (fs.existsSync(filePath)) {
@@ -88,7 +90,7 @@ app.get('/vendor', (req, res) => {
 });
 
 app.get('/driver', (req, res) => {
-  const filePath = path.join(publicPath, 'driver-dashboard.html');
+  const filePath = path.join(finalPublicPath, 'driver-dashboard.html');
   console.log('🔍 Driver dashboard request. Path:', filePath);
   console.log('🔍 File exists:', fs.existsSync(filePath));
   if (fs.existsSync(filePath)) {
@@ -101,7 +103,7 @@ app.get('/driver', (req, res) => {
 
 // Registration and login routes
 app.get('/login', (req, res) => {
-  const filePath = path.join(publicPath, 'login.html');
+  const filePath = path.join(finalPublicPath, 'login.html');
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
@@ -110,7 +112,7 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/driver-register', (req, res) => {
-  const filePath = path.join(publicPath, 'driver-register.html');
+  const filePath = path.join(finalPublicPath, 'driver-register.html');
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
@@ -119,7 +121,7 @@ app.get('/driver-register', (req, res) => {
 });
 
 app.get('/vendor-register', (req, res) => {
-  const filePath = path.join(publicPath, 'vendor-register.html');
+  const filePath = path.join(finalPublicPath, 'vendor-register.html');
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
