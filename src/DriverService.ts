@@ -486,19 +486,23 @@ export class DriverService {
 
   async updateDriverLocation(driverId: string, latitude: number, longitude: number): Promise<boolean> {
     try {
-      console.log('� [DIAGNOSTIC] updateDriverLocation called');
+      console.log('🔍 [DIAGNOSTIC] updateDriverLocation called');
       console.log('🔍 [DIAGNOSTIC] driverId:', driverId);
       console.log('🔍 [DIAGNOSTIC] latitude:', latitude);
       console.log('🔍 [DIAGNOSTIC] longitude:', longitude);
       console.log('📍 Updating driver location...');
 
-      const locationQuery = `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`;
-      console.log('🔍 [DIAGNOSTIC] locationQuery:', locationQuery);
+      // Use JSON geometry instead of SQL query (Supabase doesn't support raw SQL in update)
+      const locationData = {
+        type: 'Point',
+        coordinates: [longitude, latitude]
+      };
+      console.log('🔍 [DIAGNOSTIC] locationData:', locationData);
 
       const { data, error } = await supabase
         .from('drivers')
         .update({
-          current_location: locationQuery,
+          current_location: locationData,
           updated_at: new Date().toISOString()
         })
         .eq('id', driverId)
