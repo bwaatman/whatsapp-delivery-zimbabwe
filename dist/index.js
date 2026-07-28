@@ -102,6 +102,23 @@ app.get('/driver', (req, res) => {
         res.status(404).send('Driver dashboard not found');
     }
 });
+// New route to bypass all caching
+app.get('/driver-new', (req, res) => {
+    const filePath = path_1.default.join(finalPublicPath, 'driver-dashboard-v2.html');
+    console.log('🔍 [NEW] Driver dashboard request. Path:', filePath);
+    console.log('🔍 [NEW] File exists:', fs_1.default.existsSync(filePath));
+    if (fs_1.default.existsSync(filePath)) {
+        // Set cache-busting headers
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.sendFile(filePath);
+    }
+    else {
+        console.log('❌ Driver dashboard file not found at:', filePath);
+        res.status(404).send('Driver dashboard not found');
+    }
+});
 // Registration and login routes
 app.get('/login', (req, res) => {
     const filePath = path_1.default.join(finalPublicPath, 'login.html');
