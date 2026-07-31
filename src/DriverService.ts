@@ -61,6 +61,11 @@ export interface AvailableOrder {
   shop_name: string;
   created_at: string;
   estimated_preparation_time: number;
+  // Distance and ETA metrics
+  driver_to_vendor_distance_km?: number;
+  vendor_to_customer_distance_km?: number;
+  total_journey_distance_km?: number;
+  estimated_delivery_time_minutes?: number;
 }
 
 export interface ActiveDelivery {
@@ -167,28 +172,65 @@ export class DriverService {
 
       console.log('🔍 [DIAGNOSTIC] Raw orders from database:', data.length);
 
-      // Transform the data to match AvailableOrder interface
-      const orders = data.map((order: any) => ({
-        id: order.id,
-        customer_phone: order.customer_phone,
-        customer_name: order.customer_name,
-        order_details: order.order_details,
-        delivery_location: order.delivery_location,
-        shop_location: order.merchants?.shop_location,
-        shop_address: order.merchants?.shop_address,
-        shop_name: order.merchants?.name,
-        created_at: order.created_at,
-        estimated_preparation_time: 30, // Default 30 minutes
-        merchant_id: order.merchants?.category_id,
-        status: order.status
-      })) as AvailableOrder[];
+      // Get driver location if driverId is provided
+      let driverLocation: any = null;
+      if (driverId) {
+        const { data: driver } = await supabase
+          .from('drivers')
+          .select('current_location')
+          .eq('id', driverId)
+          .single();
+        driverLocation = driver?.current_location;
+      }
+
+      const vehicleRestrictionService = new VehicleRestrictionService();
+
+      // Transform the data to match AvailableOrder interface with distance metrics
+      const orders = data.map((order: any) => {
+        const vendorToCustomerDistance = vehicleRestrictionService.calculateDistance(
+          order.merchants?.shop_location,
+          order.delivery_location
+        );
+
+        let driverToVendorDistance = 0;
+        let totalJourneyDistance = vendorToCustomerDistance;
+        let estimatedDeliveryTime = 30 + (vendorToCustomerDistance / 20) * 60; // Default prep + travel
+
+        if (driverLocation) {
+          driverToVendorDistance = vehicleRestrictionService.calculateDistance(
+            driverLocation,
+            order.merchants?.shop_location
+          );
+          totalJourneyDistance = driverToVendorDistance + vendorToCustomerDistance;
+          estimatedDeliveryTime = 30 + (totalJourneyDistance / 20) * 60; // Prep + total travel
+        }
+
+        return {
+          id: order.id,
+          customer_phone: order.customer_phone,
+          customer_name: order.customer_name,
+          order_details: order.order_details,
+          delivery_location: order.delivery_location,
+          shop_location: order.merchants?.shop_location,
+          shop_address: order.merchants?.shop_address,
+          shop_name: order.merchants?.name,
+          created_at: order.created_at,
+          estimated_preparation_time: 30, // Default 30 minutes
+          merchant_id: order.merchants?.category_id,
+          status: order.status,
+          // Distance and ETA metrics
+          driver_to_vendor_distance_km: driverToVendorDistance,
+          vendor_to_customer_distance_km: vendorToCustomerDistance,
+          total_journey_distance_km: totalJourneyDistance,
+          estimated_delivery_time_minutes: estimatedDeliveryTime
+        };
+      }) as AvailableOrder[];
 
       console.log('🔍 [DIAGNOSTIC] Transformed orders:', orders.length);
 
       // If driverId is provided, filter orders based on vehicle eligibility
       if (driverId) {
         console.log('🔍 [DIAGNOSTIC] driverId is truthy - ENTERING FILTERING LOOP');
-        const vehicleRestrictionService = new VehicleRestrictionService();
         const eligibleOrders: AvailableOrder[] = [];
 
         for (const order of orders) {
@@ -848,6 +890,153 @@ export class DriverService {
     } catch (error) {
       console.error('❌ Exception in getOrderDetails:', error);
       return null;
+    }
+  }
+
+  /**
+   * Check and update driver location health
+   * Marks drivers as temporarily offline if location is stale
+   * Restores drivers to online if location is fresh again
+   */
+  async checkDriverLocationHealth(driverId: string): Promise<void> {
+    try {
+      // Get platform config for stale timeout
+      const { OrderEconomicsService } = await import('./OrderEconomicsService');
+      const orderEconomicsService = new OrderEconomicsService();
+      const config = await orderEconomicsService.getPlatformConfig();
+      const staleTimeoutMinutes = config.gps_stale_timeout_minutes;
+
+      // Get driver details
+      const { data: driver, error: driverError } = await supabase
+        .from('drivers')
+        .select('id, is_online, location_metadata, is_temporarily_offline')
+        .eq('id', driverId)
+        .single();
+
+      if (driverError || !driver) {
+        console.error('❌ Error fetching driver for health check:', driverError);
+        return;
+      }
+
+      // Only check health if driver is marked as online
+      if (!driver.is_online) {
+        return;
+      }
+
+      // Parse location metadata
+      const locationMetadata = driver.location_metadata ? JSON.parse(driver.location_metadata) : null;
+      const lastUpdated = locationMetadata?.timestamp ? new Date(locationMetadata.timestamp) : null;
+      const now = new Date();
+
+      if (!lastUpdated) {
+        console.warn(`⚠️ Driver ${driverId} has no location metadata - marking as temporarily offline`);
+        await this.markDriverTemporarilyOffline(driverId, 'No location data available');
+        return;
+      }
+
+      const minutesSinceUpdate = (now.getTime() - lastUpdated.getTime()) / 60000;
+
+      if (minutesSinceUpdate > staleTimeoutMinutes) {
+        console.warn(`⚠️ Driver ${driverId} location is stale (${minutesSinceUpdate.toFixed(0)}m > ${staleTimeoutMinutes}m) - marking as temporarily offline`);
+        await this.markDriverTemporarilyOffline(driverId, `Location stale for ${minutesSinceUpdate.toFixed(0)} minutes`);
+      } else {
+        // Location is fresh - if driver was temporarily offline, restore it
+        if (driver.is_temporarily_offline) {
+          console.log(`✅ Driver ${driverId} location is fresh - restoring to online`);
+          await this.restoreDriverFromOffline(driverId);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Exception in checkDriverLocationHealth:', error);
+    }
+  }
+
+  /**
+   * Mark a driver as temporarily offline due to stale location
+   */
+  async markDriverTemporarilyOffline(driverId: string, reason: string): Promise<boolean> {
+    try {
+      console.log(`🔴 Marking driver ${driverId} as temporarily offline: ${reason}`);
+
+      const { error } = await supabase
+        .from('drivers')
+        .update({
+          is_temporarily_offline: true,
+          offline_reason: reason,
+          offline_since: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', driverId);
+
+      if (error) {
+        console.error('❌ Error marking driver as temporarily offline:', error);
+        return false;
+      }
+
+      // Log the event
+      await this.logDriverLocationEvent(driverId, 'driver_offline', reason);
+
+      console.log('✅ Driver marked as temporarily offline');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in markDriverTemporarilyOffline:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Restore a driver from temporarily offline to online
+   */
+  async restoreDriverFromOffline(driverId: string): Promise<boolean> {
+    try {
+      console.log(`🟢 Restoring driver ${driverId} from temporarily offline to online`);
+
+      const { error } = await supabase
+        .from('drivers')
+        .update({
+          is_temporarily_offline: false,
+          offline_reason: null,
+          offline_since: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', driverId);
+
+      if (error) {
+        console.error('❌ Error restoring driver from offline:', error);
+        return false;
+      }
+
+      // Log the event
+      await this.logDriverLocationEvent(driverId, 'driver_restored', 'Location restored');
+
+      console.log('✅ Driver restored from temporarily offline');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in restoreDriverFromOffline:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Log a driver location-related event for audit purposes
+   */
+  async logDriverLocationEvent(driverId: string, eventType: string, details: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('location_audit_log')
+        .insert({
+          entity_id: driverId,
+          entity_type: 'driver',
+          event_type: eventType,
+          details: details,
+          timestamp: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('❌ Error logging driver location event:', error);
+      }
+    } catch (error) {
+      console.error('❌ Exception in logDriverLocationEvent:', error);
     }
   }
 

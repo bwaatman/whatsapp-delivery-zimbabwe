@@ -335,6 +335,13 @@
             </div>
         </div>
 
+        <div class="section">
+            <h2>📍 Shop Status</h2>
+            <div id="shop-status-section">
+                <div class="loading">Loading shop status...</div>
+            </div>
+        </div>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>Pending Orders</h3>
@@ -1294,16 +1301,301 @@
             }
         });
 
+        // GPS and Shop Status Functions
+        let gpsInterval = null;
+        let gpsRetryTimeout = null;
+        let lastKnownPosition = null;
+        let gpsRetryCount = 0;
+        const gpsRetryDelays = [30000, 60000, 120000, 300000]; // 30s, 1m, 2m, 5m
+
+        async function loadShopStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}`);
+                const shop = await response.json();
+                renderShopStatus(shop);
+            } catch (error) {
+                console.error('Error loading shop status:', error);
+                document.getElementById('shop-status-section').innerHTML = 
+                    '<div class="error">Error loading shop status</div>';
+            }
+        }
+
+        function renderShopStatus(shop) {
+            const isOpen = shop.is_open;
+            const locationMetadata = shop.location_metadata ? JSON.parse(shop.location_metadata) : null;
+            const lastUpdated = locationMetadata?.timestamp ? new Date(locationMetadata.timestamp) : null;
+            const now = new Date();
+            const minutesSinceUpdate = lastUpdated ? Math.floor((now - lastUpdated) / 60000) : null;
+
+            let statusHtml = '';
+            
+            if (isOpen) {
+                if (minutesSinceUpdate !== null && minutesSinceUpdate > 15) {
+                    // Temporarily Offline
+                    statusHtml = `
+                        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px;">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                                <span style="font-size: 2em;">🔴</span>
+                                <div>
+                                    <h3 style="margin: 0; color: #856404;">Temporarily Offline</h3>
+                                    <p style="margin: 5px 0 0 0; color: #856404;">Location unavailable. Orders paused until GPS is restored.</p>
+                                </div>
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                                <p style="margin: 0; color: #856404;">
+                                    <strong>Warning:</strong> Your location has not been updated for over ${minutesSinceUpdate} minutes.
+                                    Your shop has been temporarily paused. Please restore your GPS connection to continue receiving orders.
+                                </p>
+                            </div>
+                            <button class="btn btn-confirm" onclick="restoreGpsConnection()" style="width: 100%;">Restore GPS Connection</button>
+                        </div>
+                    `;
+                } else if (minutesSinceUpdate !== null && minutesSinceUpdate > 5) {
+                    // GPS Lost - Retrying
+                    statusHtml = `
+                        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px;">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                                <span style="font-size: 2em;">🟠</span>
+                                <div>
+                                    <h3 style="margin: 0; color: #856404;">GPS Lost</h3>
+                                    <p style="margin: 5px 0 0 0; color: #856404;">Retrying...</p>
+                                </div>
+                            </div>
+                            <p style="margin: 0; color: #856404;">Last updated: ${lastUpdated ? lastUpdated.toLocaleTimeString() : 'N/A'} (${minutesSinceUpdate}m ago)</p>
+                        </div>
+                    `;
+                } else {
+                    // Open with GPS Verified
+                    statusHtml = `
+                        <div style="background: #d4edda; border: 2px solid #28a745; border-radius: 8px; padding: 20px;">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                                <span style="font-size: 2em;">🟢</span>
+                                <div>
+                                    <h3 style="margin: 0; color: #155724;">Open</h3>
+                                    <p style="margin: 5px 0 0 0; color: #155724;">GPS Verified</p>
+                                </div>
+                            </div>
+                            <p style="margin: 0; color: #155724;">Last Updated: ${lastUpdated ? lastUpdated.toLocaleTimeString() : 'N/A'}</p>
+                            <button class="btn btn-reject" onclick="closeShop()" style="margin-top: 15px; width: 100%;">Close Shop</button>
+                        </div>
+                    `;
+                }
+            } else {
+                // Closed
+                statusHtml = `
+                    <div style="background: #f8f9fa; border: 2px solid #6c757d; border-radius: 8px; padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <span style="font-size: 2em;">⚫</span>
+                            <div>
+                                <h3 style="margin: 0; color: #495057;">Closed</h3>
+                                <p style="margin: 5px 0 0 0; color: #495057;">Shop is not accepting orders</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-confirm" onclick="openShop()" style="width: 100%;">Open Shop</button>
+                    </div>
+                `;
+            }
+
+            document.getElementById('shop-status-section').innerHTML = statusHtml;
+        }
+
+        async function openShop() {
+            try {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser. Please use a modern browser.');
+                    return;
+                }
+
+                // Request GPS permission and get current location
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude, accuracy } = position.coords;
+                        const timestamp = new Date(position.timestamp).toISOString();
+
+                        // Update shop location and mark as open
+                        const response = await fetch(`${API_BASE}/shop/${currentShopId}/location`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ latitude, longitude, accuracy, timestamp })
+                        });
+
+                        if (response.ok) {
+                            await fetch(`${API_BASE}/shop/${currentShopId}/status`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ isOpen: true })
+                            });
+
+                            lastKnownPosition = { latitude, longitude };
+                            gpsRetryCount = 0;
+                            
+                            // Start GPS refresh interval (5 minutes)
+                            startGpsRefresh();
+                            
+                            await loadShopStatus();
+                            alert('Shop opened successfully! GPS is now tracking your location.');
+                        } else {
+                            alert('Failed to update shop location. Please try again.');
+                        }
+                    },
+                    (error) => {
+                        console.error('GPS error:', error);
+                        let errorMessage = 'Failed to get GPS location. ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'Location permission was denied. Please enable location access in your browser settings.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Location information is unavailable.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'Location request timed out.';
+                                break;
+                            default:
+                                errorMessage += 'An unknown error occurred.';
+                        }
+                        alert(errorMessage);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } catch (error) {
+                console.error('Error opening shop:', error);
+                alert('Error opening shop. Please try again.');
+            }
+        }
+
+        async function closeShop() {
+            try {
+                // Stop GPS refresh
+                stopGpsRefresh();
+
+                // Mark shop as closed
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isOpen: false })
+                });
+
+                if (response.ok) {
+                    lastKnownPosition = null;
+                    await loadShopStatus();
+                    alert('Shop closed successfully. Location tracking has stopped.');
+                } else {
+                    alert('Failed to close shop. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error closing shop:', error);
+                alert('Error closing shop. Please try again.');
+            }
+        }
+
+        function startGpsRefresh() {
+            stopGpsRefresh(); // Clear any existing interval
+            
+            // Refresh every 5 minutes
+            gpsInterval = setInterval(() => {
+                refreshGpsLocation();
+            }, 5 * 60 * 1000);
+        }
+
+        function stopGpsRefresh() {
+            if (gpsInterval) {
+                clearInterval(gpsInterval);
+                gpsInterval = null;
+            }
+            if (gpsRetryTimeout) {
+                clearTimeout(gpsRetryTimeout);
+                gpsRetryTimeout = null;
+            }
+        }
+
+        async function refreshGpsLocation() {
+            try {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude, accuracy } = position.coords;
+                        const timestamp = new Date(position.timestamp).toISOString();
+
+                        // Check if movement exceeds threshold
+                        if (lastKnownPosition) {
+                            const distance = calculateDistance(
+                                lastKnownPosition.latitude,
+                                lastKnownPosition.longitude,
+                                latitude,
+                                longitude
+                            );
+                            // If movement > 50 meters, update immediately (already doing this)
+                        }
+
+                        const response = await fetch(`${API_BASE}/shop/${currentShopId}/location`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ latitude, longitude, accuracy, timestamp })
+                        });
+
+                        if (response.ok) {
+                            lastKnownPosition = { latitude, longitude };
+                            gpsRetryCount = 0;
+                            await loadShopStatus();
+                        }
+                    },
+                    (error) => {
+                        console.error('GPS refresh error:', error);
+                        handleGpsError();
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } catch (error) {
+                console.error('Error refreshing GPS:', error);
+                handleGpsError();
+            }
+        }
+
+        function handleGpsError() {
+            // Retry with exponential backoff
+            if (gpsRetryCount < gpsRetryDelays.length) {
+                const delay = gpsRetryDelays[gpsRetryCount];
+                console.log(`GPS retry ${gpsRetryCount + 1} in ${delay / 1000} seconds`);
+                
+                gpsRetryTimeout = setTimeout(() => {
+                    gpsRetryCount++;
+                    refreshGpsLocation();
+                }, delay);
+            } else {
+                // All retries failed - shop will be marked as temporarily offline by backend
+                console.error('All GPS retries failed');
+                loadShopStatus(); // Update UI to show offline status
+            }
+        }
+
+        async function restoreGpsConnection() {
+            gpsRetryCount = 0;
+            await refreshGpsLocation();
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c * 1000; // Return in meters
+        }
+
         // Auto-load dashboard on page load
         loadDashboard();
         loadCategories();
         loadVendorCategory();
         loadProducts();
+        loadShopStatus();
         
         // Auto-refresh every 30 seconds
         setInterval(() => {
             if (currentShopId) {
                 loadDashboard();
+                loadShopStatus();
             }
         }, 30000);
 

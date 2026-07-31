@@ -21,9 +21,14 @@ export interface OrderEconomics {
 }
 
 export interface VehicleRestriction {
-  max_distance_km: number;
+  max_distance_km: number; // Legacy field for backward compatibility
   max_weight_kg: number;
-  max_eta_minutes: number;
+  max_eta_minutes: number; // Legacy field for backward compatibility
+  // New dispatch eligibility fields
+  max_driver_to_vendor_distance_km: number;
+  max_vendor_to_customer_distance_km: number;
+  max_total_journey_distance_km: number;
+  max_eta_safety_limit_minutes?: number; // Optional safety limit for extreme cases
 }
 
 export interface PlatformConfig {
@@ -34,6 +39,11 @@ export interface PlatformConfig {
   service_fee: number;
   vehicle_restrictions: Record<string, VehicleRestriction>;
   bicycle_pickup_radius_km: number;
+  // GPS and location settings
+  gps_refresh_interval_minutes: number;
+  gps_stale_timeout_minutes: number;
+  gps_movement_threshold_meters: number;
+  max_gps_accuracy_meters: number;
 }
 
 export class OrderEconomicsService {
@@ -58,11 +68,15 @@ export class OrderEconomicsService {
           min_payout_amount: 100,
           service_fee: 10,
           vehicle_restrictions: {
-            bicycle: { max_distance_km: 5, max_weight_kg: 5, max_eta_minutes: 30 },
-            motorbike: { max_distance_km: 8, max_weight_kg: 25, max_eta_minutes: 30 },
-            car: { max_distance_km: 10, max_weight_kg: 999, max_eta_minutes: 30 }
+            bicycle: { max_distance_km: 5, max_weight_kg: 5, max_eta_minutes: 30, max_driver_to_vendor_distance_km: 5, max_vendor_to_customer_distance_km: 5, max_total_journey_distance_km: 10, max_eta_safety_limit_minutes: 60 },
+            motorbike: { max_distance_km: 8, max_weight_kg: 25, max_eta_minutes: 30, max_driver_to_vendor_distance_km: 8, max_vendor_to_customer_distance_km: 8, max_total_journey_distance_km: 16, max_eta_safety_limit_minutes: 90 },
+            car: { max_distance_km: 10, max_weight_kg: 999, max_eta_minutes: 30, max_driver_to_vendor_distance_km: 10, max_vendor_to_customer_distance_km: 10, max_total_journey_distance_km: 20, max_eta_safety_limit_minutes: 120 }
           },
-          bicycle_pickup_radius_km: 2
+          bicycle_pickup_radius_km: 2,
+          gps_refresh_interval_minutes: 5,
+          gps_stale_timeout_minutes: 15,
+          gps_movement_threshold_meters: 50,
+          max_gps_accuracy_meters: 100
         };
       }
 
@@ -78,17 +92,29 @@ export class OrderEconomicsService {
         bicycle: {
           max_distance_km: parseFloat(configMap['bicycle_max_distance'] || '5'),
           max_weight_kg: parseFloat(configMap['bicycle_max_weight'] || '5'),
-          max_eta_minutes: parseFloat(configMap['bicycle_max_eta'] || '30')
+          max_eta_minutes: parseFloat(configMap['bicycle_max_eta'] || '30'),
+          max_driver_to_vendor_distance_km: parseFloat(configMap['bicycle_max_driver_to_vendor_distance'] || configMap['bicycle_max_distance'] || '5'),
+          max_vendor_to_customer_distance_km: parseFloat(configMap['bicycle_max_vendor_to_customer_distance'] || configMap['bicycle_max_distance'] || '5'),
+          max_total_journey_distance_km: parseFloat(configMap['bicycle_max_total_journey_distance'] || '10'),
+          max_eta_safety_limit_minutes: parseFloat(configMap['bicycle_max_eta_safety_limit'] || '60')
         },
         motorbike: {
           max_distance_km: parseFloat(configMap['motorbike_max_distance'] || '8'),
           max_weight_kg: parseFloat(configMap['motorbike_max_weight'] || '25'),
-          max_eta_minutes: parseFloat(configMap['motorbike_max_eta'] || '30')
+          max_eta_minutes: parseFloat(configMap['motorbike_max_eta'] || '30'),
+          max_driver_to_vendor_distance_km: parseFloat(configMap['motorbike_max_driver_to_vendor_distance'] || configMap['motorbike_max_distance'] || '8'),
+          max_vendor_to_customer_distance_km: parseFloat(configMap['motorbike_max_vendor_to_customer_distance'] || configMap['motorbike_max_distance'] || '8'),
+          max_total_journey_distance_km: parseFloat(configMap['motorbike_max_total_journey_distance'] || '16'),
+          max_eta_safety_limit_minutes: parseFloat(configMap['motorbike_max_eta_safety_limit'] || '90')
         },
         car: {
           max_distance_km: parseFloat(configMap['car_max_distance'] || '10'),
           max_weight_kg: parseFloat(configMap['car_max_weight'] || '999'),
-          max_eta_minutes: parseFloat(configMap['car_max_eta'] || '30')
+          max_eta_minutes: parseFloat(configMap['car_max_eta'] || '30'),
+          max_driver_to_vendor_distance_km: parseFloat(configMap['car_max_driver_to_vendor_distance'] || configMap['car_max_distance'] || '10'),
+          max_vendor_to_customer_distance_km: parseFloat(configMap['car_max_vendor_to_customer_distance'] || configMap['car_max_distance'] || '10'),
+          max_total_journey_distance_km: parseFloat(configMap['car_max_total_journey_distance'] || '20'),
+          max_eta_safety_limit_minutes: parseFloat(configMap['car_max_eta_safety_limit'] || '120')
         }
       };
 
@@ -100,7 +126,11 @@ export class OrderEconomicsService {
           vehicleRestrictions[vehicleType] = {
             max_distance_km: parseFloat(configMap[`${vehicleType}_max_distance`] || '999'),
             max_weight_kg: parseFloat(configMap[`${vehicleType}_max_weight`] || '999'),
-            max_eta_minutes: parseFloat(configMap[`${vehicleType}_max_eta`] || '999')
+            max_eta_minutes: parseFloat(configMap[`${vehicleType}_max_eta`] || '999'),
+            max_driver_to_vendor_distance_km: parseFloat(configMap[`${vehicleType}_max_driver_to_vendor_distance`] || configMap[`${vehicleType}_max_distance`] || '999'),
+            max_vendor_to_customer_distance_km: parseFloat(configMap[`${vehicleType}_max_vendor_to_customer_distance`] || configMap[`${vehicleType}_max_distance`] || '999'),
+            max_total_journey_distance_km: parseFloat(configMap[`${vehicleType}_max_total_journey_distance`] || '999'),
+            max_eta_safety_limit_minutes: parseFloat(configMap[`${vehicleType}_max_eta_safety_limit`] || '999')
           };
         }
       });
@@ -112,7 +142,11 @@ export class OrderEconomicsService {
         min_payout_amount: parseFloat(configMap['min_payout_amount'] || '100'),
         service_fee: parseFloat(configMap['service_fee'] || '10'),
         vehicle_restrictions: vehicleRestrictions,
-        bicycle_pickup_radius_km: parseFloat(configMap['bicycle_pickup_radius'] || '2')
+        bicycle_pickup_radius_km: parseFloat(configMap['bicycle_pickup_radius'] || '2'),
+        gps_refresh_interval_minutes: parseFloat(configMap['gps_refresh_interval'] || '5'),
+        gps_stale_timeout_minutes: parseFloat(configMap['gps_stale_timeout'] || '15'),
+        gps_movement_threshold_meters: parseFloat(configMap['gps_movement_threshold'] || '50'),
+        max_gps_accuracy_meters: parseFloat(configMap['max_gps_accuracy'] || '100')
       };
     } catch (error) {
       console.error('❌ Exception in getPlatformConfig:', error);
@@ -123,11 +157,15 @@ export class OrderEconomicsService {
         min_payout_amount: 100,
         service_fee: 10,
         vehicle_restrictions: {
-          bicycle: { max_distance_km: 5, max_weight_kg: 5, max_eta_minutes: 30 },
-          motorbike: { max_distance_km: 8, max_weight_kg: 25, max_eta_minutes: 30 },
-          car: { max_distance_km: 10, max_weight_kg: 999, max_eta_minutes: 30 }
+          bicycle: { max_distance_km: 5, max_weight_kg: 5, max_eta_minutes: 30, max_driver_to_vendor_distance_km: 5, max_vendor_to_customer_distance_km: 5, max_total_journey_distance_km: 10, max_eta_safety_limit_minutes: 60 },
+          motorbike: { max_distance_km: 8, max_weight_kg: 25, max_eta_minutes: 30, max_driver_to_vendor_distance_km: 8, max_vendor_to_customer_distance_km: 8, max_total_journey_distance_km: 16, max_eta_safety_limit_minutes: 90 },
+          car: { max_distance_km: 10, max_weight_kg: 999, max_eta_minutes: 30, max_driver_to_vendor_distance_km: 10, max_vendor_to_customer_distance_km: 10, max_total_journey_distance_km: 20, max_eta_safety_limit_minutes: 120 }
         },
-        bicycle_pickup_radius_km: 2
+        bicycle_pickup_radius_km: 2,
+        gps_refresh_interval_minutes: 5,
+        gps_stale_timeout_minutes: 15,
+        gps_movement_threshold_meters: 50,
+        max_gps_accuracy_meters: 100
       };
     }
   }

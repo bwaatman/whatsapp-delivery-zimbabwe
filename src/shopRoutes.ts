@@ -168,12 +168,14 @@ router.post('/shop/:id/orders/:orderId/ready', async (req: Request, res: Respons
 // Update shop location
 router.put('/shop/:id/location', async (req: Request, res: Response) => {
   try {
-    const { latitude, longitude, address } = req.body;
+    const { latitude, longitude, address, accuracy, timestamp } = req.body;
     const success = await shopService.updateShopLocation(
       getParam(req.params.id),
       latitude,
       longitude,
-      address
+      address,
+      accuracy,
+      timestamp
     );
     if (!success) {
       return res.status(400).json({ error: 'Failed to update shop location' });

@@ -365,7 +365,21 @@
         </div>
 
         <div class="section">
-            <h2>💰 Payout Management</h2>
+            <h2>� Vehicle Restrictions</h2>
+            <div id="vehicle-restrictions-section">
+                <div class="loading">Loading vehicle restrictions...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📍 GPS Settings</h2>
+            <div id="gps-settings-section">
+                <div class="loading">Loading GPS settings...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>� Payout Management</h2>
             <div id="payout-section">
                 <div class="loading">Loading payout information...</div>
             </div>
@@ -433,6 +447,12 @@
 
                 // Load payment configuration
                 await loadPaymentConfig();
+
+                // Load vehicle restrictions
+                await loadVehicleRestrictions();
+
+                // Load GPS settings
+                await loadGpsSettings();
 
                 // Load payout information
                 await loadPayoutInfo();
@@ -1111,6 +1131,194 @@
             } catch (error) {
                 console.error('Error updating config:', error);
                 alert('Error updating configuration');
+            }
+        }
+
+        async function loadVehicleRestrictions() {
+            try {
+                const response = await fetch(`${API_BASE}/config/platform`, {
+                    headers: getAuthHeaders()
+                });
+                const config = await response.json();
+                
+                const vehicleTypes = ['bicycle', 'motorbike', 'car'];
+                let html = '<div class="table-container"><table><thead><tr><th>Vehicle Type</th><th>Driver→Vendor (km)</th><th>Vendor→Customer (km)</th><th>Total Journey (km)</th><th>ETA Safety Limit (min)</th><th>Actions</th></tr></thead><tbody>';
+                
+                vehicleTypes.forEach(vehicleType => {
+                    const restriction = config.vehicle_restrictions[vehicleType] || {};
+                    const displayName = vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1);
+                    html += `
+                        <tr>
+                            <td><strong>${displayName}</strong></td>
+                            <td>
+                                <input type="number" id="${vehicleType}-driver-to-vendor-input" value="${restriction.max_driver_to_vendor_distance_km || 5}" min="0" step="0.5" style="width: 70px; padding: 5px;">
+                            </td>
+                            <td>
+                                <input type="number" id="${vehicleType}-vendor-to-customer-input" value="${restriction.max_vendor_to_customer_distance_km || 5}" min="0" step="0.5" style="width: 70px; padding: 5px;">
+                            </td>
+                            <td>
+                                <input type="number" id="${vehicleType}-total-journey-input" value="${restriction.max_total_journey_distance_km || 10}" min="0" step="0.5" style="width: 70px; padding: 5px;">
+                            </td>
+                            <td>
+                                <input type="number" id="${vehicleType}-eta-safety-input" value="${restriction.max_eta_safety_limit_minutes || 60}" min="0" style="width: 70px; padding: 5px;">
+                            </td>
+                            <td>
+                                <button class="btn btn-confirm" onclick="updateVehicleRestriction('${vehicleType}')">Update</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                document.getElementById('vehicle-restrictions-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading vehicle restrictions:', error);
+                document.getElementById('vehicle-restrictions-section').innerHTML = 
+                    '<div class="error">Error loading vehicle restrictions</div>';
+            }
+        }
+
+        async function updateVehicleRestriction(vehicleType) {
+            try {
+                const driverToVendor = document.getElementById(`${vehicleType}-driver-to-vendor-input`).value;
+                const vendorToCustomer = document.getElementById(`${vehicleType}-vendor-to-customer-input`).value;
+                const totalJourney = document.getElementById(`${vehicleType}-total-journey-input`).value;
+                const etaSafety = document.getElementById(`${vehicleType}-eta-safety-input`).value;
+
+                const updates = [
+                    { key: `${vehicleType}_max_driver_to_vendor_distance`, value: driverToVendor },
+                    { key: `${vehicleType}_max_vendor_to_customer_distance`, value: vendorToCustomer },
+                    { key: `${vehicleType}_max_total_journey_distance`, value: totalJourney },
+                    { key: `${vehicleType}_max_eta_safety_limit`, value: etaSafety }
+                ];
+
+                let allSuccess = true;
+                for (const update of updates) {
+                    const response = await fetch(`${API_BASE}/config/platform/${update.key}`, {
+                        method: 'PUT',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ value: update.value })
+                    });
+                    if (!response.ok) {
+                        allSuccess = false;
+                    }
+                }
+
+                if (allSuccess) {
+                    alert('Vehicle restrictions updated successfully');
+                    await loadVehicleRestrictions();
+                } else {
+                    alert('Failed to update some vehicle restrictions');
+                }
+            } catch (error) {
+                console.error('Error updating vehicle restriction:', error);
+                alert('Error updating vehicle restriction');
+            }
+        }
+
+        async function loadGpsSettings() {
+            try {
+                const response = await fetch(`${API_BASE}/config/platform`, {
+                    headers: getAuthHeaders()
+                });
+                const config = await response.json();
+                
+                let html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Setting</th>
+                                    <th>Current Value</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>GPS Refresh Interval</td>
+                                    <td>${config.gps_refresh_interval_minutes} minutes</td>
+                                    <td>How often to refresh GPS while active</td>
+                                    <td>
+                                        <input type="number" id="gps-refresh-interval-input" value="${config.gps_refresh_interval_minutes}" min="1" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateGpsSetting('gps_refresh_interval')">Update</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>GPS Stale Timeout</td>
+                                    <td>${config.gps_stale_timeout_minutes} minutes</td>
+                                    <td>Mark location stale after no updates</td>
+                                    <td>
+                                        <input type="number" id="gps-stale-timeout-input" value="${config.gps_stale_timeout_minutes}" min="1" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateGpsSetting('gps_stale_timeout')">Update</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>GPS Movement Threshold</td>
+                                    <td>${config.gps_movement_threshold_meters} meters</td>
+                                    <td>Refresh immediately if movement exceeds this</td>
+                                    <td>
+                                        <input type="number" id="gps-movement-threshold-input" value="${config.gps_movement_threshold_meters}" min="0" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateGpsSetting('gps_movement_threshold')">Update</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Maximum GPS Accuracy</td>
+                                    <td>${config.max_gps_accuracy_meters} meters</td>
+                                    <td>Reject GPS updates with accuracy worse than this</td>
+                                    <td>
+                                        <input type="number" id="max-gps-accuracy-input" value="${config.max_gps_accuracy_meters}" min="0" style="width: 60px; padding: 5px;">
+                                        <button class="btn btn-confirm" onclick="updateGpsSetting('max_gps_accuracy')">Update</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('gps-settings-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading GPS settings:', error);
+                document.getElementById('gps-settings-section').innerHTML = 
+                    '<div class="error">Error loading GPS settings</div>';
+            }
+        }
+
+        async function updateGpsSetting(key) {
+            try {
+                let value;
+                switch(key) {
+                    case 'gps_refresh_interval':
+                        value = document.getElementById('gps-refresh-interval-input').value;
+                        break;
+                    case 'gps_stale_timeout':
+                        value = document.getElementById('gps-stale-timeout-input').value;
+                        break;
+                    case 'gps_movement_threshold':
+                        value = document.getElementById('gps-movement-threshold-input').value;
+                        break;
+                    case 'max_gps_accuracy':
+                        value = document.getElementById('max-gps-accuracy-input').value;
+                        break;
+                }
+
+                const response = await fetch(`${API_BASE}/config/platform/${key}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ value })
+                });
+
+                if (response.ok) {
+                    alert('GPS setting updated successfully');
+                    await loadGpsSettings();
+                } else {
+                    alert('Failed to update GPS setting');
+                }
+            } catch (error) {
+                console.error('Error updating GPS setting:', error);
+                alert('Error updating GPS setting');
             }
         }
 

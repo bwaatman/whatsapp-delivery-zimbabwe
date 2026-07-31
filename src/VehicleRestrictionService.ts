@@ -160,6 +160,14 @@ export class VehicleRestrictionService {
 
   /**
    * Check if a driver is eligible for an order based on their vehicle type
+   * NEW ELIGIBILITY RULES:
+   * - Driver → Vendor distance ≤ max_driver_to_vendor_distance_km
+   * - Vendor → Customer distance ≤ max_vendor_to_customer_distance_km
+   * - Total Journey distance ≤ max_total_journey_distance_km
+   * - Vehicle type restrictions
+   * - Driver availability
+   * - Driver online status
+   * ETA is informational only, not for eligibility
    */
   async isDriverEligibleForOrder(
     driverId: string,
@@ -168,15 +176,15 @@ export class VehicleRestrictionService {
     estimatedPreparationTime: number = 30
   ): Promise<boolean> {
     try {
-      console.log(`� [DIAGNOSTIC] isDriverEligibleForOrder called`);
+      console.log(`🔍 [DIAGNOSTIC] isDriverEligibleForOrder called`);
       console.log(`🔍 [DIAGNOSTIC] driverId: ${driverId}`);
       console.log(`🔍 [DIAGNOSTIC] vendorLocation:`, JSON.stringify(vendorLocation));
       console.log(`🔍 [DIAGNOSTIC] customerLocation:`, JSON.stringify(customerLocation));
 
-      // Get driver's vehicle type and current location
+      // Get driver's vehicle type, current location, availability, and online status
       const { data: driver, error: driverError } = await supabase
         .from('drivers')
-        .select('vehicle_type, current_location')
+        .select('vehicle_type, current_location, is_available, is_online')
         .eq('id', driverId)
         .single();
 
@@ -189,6 +197,22 @@ export class VehicleRestrictionService {
       console.log(`🔍 [DIAGNOSTIC] Driver found in database`);
       console.log(`🔍 [DIAGNOSTIC] Driver vehicle_type: ${driver.vehicle_type}`);
       console.log(`🔍 [DIAGNOSTIC] Driver current_location:`, JSON.stringify(driver.current_location));
+      console.log(`🔍 [DIAGNOSTIC] Driver is_available: ${driver.is_available}`);
+      console.log(`🔍 [DIAGNOSTIC] Driver is_online: ${driver.is_online}`);
+
+      // Check driver availability
+      if (!driver.is_available) {
+        console.log(`❌ [DIAGNOSTIC] REJECTED: Driver is not available`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (driver not available)');
+        return false;
+      }
+
+      // Check driver online status
+      if (!driver.is_online) {
+        console.log(`❌ [DIAGNOSTIC] REJECTED: Driver is not online`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (driver not online)');
+        return false;
+      }
 
       const vehicleType = driver.vehicle_type?.toLowerCase();
       if (!vehicleType) {
@@ -207,7 +231,11 @@ export class VehicleRestrictionService {
         return true;
       }
 
-      console.log(`🔍 [DIAGNOSTIC] Vehicle restriction config: max_distance=${restriction.max_distance_km}km, max_eta=${restriction.max_eta_minutes}min`);
+      console.log(`🔍 [DIAGNOSTIC] Vehicle restriction config:`);
+      console.log(`🔍 [DIAGNOSTIC] - Driver→Vendor max: ${restriction.max_driver_to_vendor_distance_km} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Vendor→Customer max: ${restriction.max_vendor_to_customer_distance_km} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Total Journey max: ${restriction.max_total_journey_distance_km} km`);
+      console.log(`🔍 [DIAGNOSTIC] - ETA Safety Limit: ${restriction.max_eta_safety_limit_minutes} min`);
 
       // Check driver location and calculate distances
       if (!driver.current_location) {
@@ -229,31 +257,37 @@ export class VehicleRestrictionService {
       const totalDistance = driverToVendorDistance + vendorToCustomerDistance;
 
       console.log(`🔍 [DIAGNOSTIC] Distance calculations:`);
-      console.log(`� [DIAGNOSTIC] - Driver coordinates:`, JSON.stringify(driver.current_location));
+      console.log(`🔍 [DIAGNOSTIC] - Driver coordinates:`, JSON.stringify(driver.current_location));
       console.log(`🔍 [DIAGNOSTIC] - Vendor coordinates:`, JSON.stringify(vendorLocation));
       console.log(`🔍 [DIAGNOSTIC] - Customer coordinates:`, JSON.stringify(customerLocation));
       console.log(`🔍 [DIAGNOSTIC] - Driver to vendor: ${driverToVendorDistance.toFixed(2)} km`);
       console.log(`🔍 [DIAGNOSTIC] - Vendor to customer: ${vendorToCustomerDistance.toFixed(2)} km`);
       console.log(`🔍 [DIAGNOSTIC] - Driver to customer: ${driverToCustomerDistance.toFixed(2)} km`);
-      console.log(`🔍 [DIAGNOSTIC] - Total distance: ${totalDistance.toFixed(2)} km`);
-      console.log(`🔍 [DIAGNOSTIC] - Max allowed distance: ${restriction.max_distance_km} km`);
+      console.log(`🔍 [DIAGNOSTIC] - Total journey: ${totalDistance.toFixed(2)} km`);
       console.log(`🔍 [DIAGNOSTIC] - Vehicle type: ${vehicleType}`);
 
-      // Check if total distance exceeds vehicle's max distance
-      if (totalDistance > restriction.max_distance_km) {
-        console.log(`❌ [DIAGNOSTIC] REJECTED: Total distance ${totalDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
-        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (total distance too far)');
+      // NEW RULE: Check Driver → Vendor distance
+      if (driverToVendorDistance > restriction.max_driver_to_vendor_distance_km) {
+        console.log(`❌ [DIAGNOSTIC] REJECTED: Driver→Vendor distance ${driverToVendorDistance.toFixed(2)} km exceeds max ${restriction.max_driver_to_vendor_distance_km} km`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (driver to vendor too far)');
         return false;
       }
 
-      // Additional check: driver to customer distance should not exceed max distance
-      if (driverToCustomerDistance > restriction.max_distance_km) {
-        console.log(`❌ [DIAGNOSTIC] REJECTED: Driver to customer distance ${driverToCustomerDistance.toFixed(2)} km exceeds max ${restriction.max_distance_km} km`);
-        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (driver to customer too far)');
+      // NEW RULE: Check Vendor → Customer distance
+      if (vendorToCustomerDistance > restriction.max_vendor_to_customer_distance_km) {
+        console.log(`❌ [DIAGNOSTIC] REJECTED: Vendor→Customer distance ${vendorToCustomerDistance.toFixed(2)} km exceeds max ${restriction.max_vendor_to_customer_distance_km} km`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (vendor to customer too far)');
         return false;
       }
 
-      // Check bicycle pickup radius restriction
+      // NEW RULE: Check Total Journey distance
+      if (totalDistance > restriction.max_total_journey_distance_km) {
+        console.log(`❌ [DIAGNOSTIC] REJECTED: Total journey ${totalDistance.toFixed(2)} km exceeds max ${restriction.max_total_journey_distance_km} km`);
+        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (total journey too far)');
+        return false;
+      }
+
+      // Check bicycle pickup radius restriction (existing rule)
       if (vehicleType === 'bicycle') {
         const pickupRadius = config.bicycle_pickup_radius_km;
         if (driverToVendorDistance > pickupRadius) {
@@ -263,21 +297,26 @@ export class VehicleRestrictionService {
         }
       }
 
-      // Check eligibility for the driver's vehicle type (vendor to customer distance and ETA)
-      const result = await this.checkOrderEligibility(
-        vendorLocation,
-        customerLocation,
-        vehicleType,
-        estimatedPreparationTime
-      );
-
-      console.log(`🔍 [DIAGNOSTIC] checkOrderEligibility result:`, result);
-      console.log(`🔍 [DIAGNOSTIC] Final eligibility: ${result.is_eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}`);
-      if (!result.is_eligible) {
-        console.log(`🔍 [DIAGNOSTIC] Rejection reasons:`, result.reasons);
+      // OPTIONAL: Check ETA safety limit for extreme cases
+      if (restriction.max_eta_safety_limit_minutes) {
+        const travelTimeMinutes = (totalDistance / 20) * 60; // Assume 20 km/h average speed
+        const estimatedEtaMinutes = estimatedPreparationTime + travelTimeMinutes;
+        
+        if (estimatedEtaMinutes > restriction.max_eta_safety_limit_minutes) {
+          console.log(`❌ [DIAGNOSTIC] REJECTED: ETA ${estimatedEtaMinutes.toFixed(0)} min exceeds safety limit ${restriction.max_eta_safety_limit_minutes} min`);
+          console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (ETA safety limit exceeded)');
+          return false;
+        }
       }
-      console.log(`🔍 [DIAGNOSTIC] RETURNING: ${result.is_eligible}`);
-      return result.is_eligible;
+
+      // Calculate ETA for informational purposes only
+      const travelTimeMinutes = (totalDistance / 20) * 60;
+      const estimatedEtaMinutes = estimatedPreparationTime + travelTimeMinutes;
+      console.log(`⏱️ [INFO] Estimated ETA: ${estimatedEtaMinutes.toFixed(0)} minutes (prep: ${estimatedPreparationTime}, travel: ${travelTimeMinutes.toFixed(0)})`);
+
+      console.log(`✅ [DIAGNOSTIC] ELIGIBLE: All distance rules passed`);
+      console.log(`🔍 [DIAGNOSTIC] RETURNING: TRUE`);
+      return true;
     } catch (error) {
       console.error('❌ [DIAGNOSTIC] Exception in isDriverEligibleForOrder:', error);
       console.log('🔍 [DIAGNOSTIC] RETURNING: TRUE (exception default)');

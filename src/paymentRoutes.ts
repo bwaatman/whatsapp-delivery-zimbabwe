@@ -191,7 +191,15 @@ router.put('/config/platform/:key', rateLimit(10, 60000), authenticateUser, asyn
     }
 
     // Validate value based on key
-    const validKeys = ['vendor_commission_rate', 'driver_delivery_rate', 'service_fee', 'min_payout_amount', 'payout_day'];
+    const validKeys = [
+      'vendor_commission_rate', 'driver_delivery_rate', 'service_fee', 'min_payout_amount', 'payout_day',
+      // Vehicle restriction keys
+      'bicycle_max_driver_to_vendor_distance', 'bicycle_max_vendor_to_customer_distance', 'bicycle_max_total_journey_distance', 'bicycle_max_eta_safety_limit',
+      'motorbike_max_driver_to_vendor_distance', 'motorbike_max_vendor_to_customer_distance', 'motorbike_max_total_journey_distance', 'motorbike_max_eta_safety_limit',
+      'car_max_driver_to_vendor_distance', 'car_max_vendor_to_customer_distance', 'car_max_total_journey_distance', 'car_max_eta_safety_limit',
+      // GPS settings keys
+      'gps_refresh_interval', 'gps_stale_timeout', 'gps_movement_threshold', 'max_gps_accuracy'
+    ];
     if (!validKeys.includes(key)) {
       return res.status(400).json({ error: 'Invalid configuration key' });
     }
@@ -215,6 +223,17 @@ router.put('/config/platform/:key', rateLimit(10, 60000), authenticateUser, asyn
     if (key === 'payout_day') {
       if (numValue < 1 || numValue > 7) {
         return res.status(400).json({ error: 'Payout day must be between 1 and 7' });
+      }
+    }
+    // Validate vehicle restriction and GPS settings
+    if (key.includes('distance') || key.includes('threshold') || key.includes('accuracy')) {
+      if (numValue < 0 || numValue > 1000) {
+        return res.status(400).json({ error: 'Distance/accuracy value must be between 0 and 1000' });
+      }
+    }
+    if (key.includes('interval') || key.includes('timeout') || key.includes('limit')) {
+      if (numValue < 1 || numValue > 1440) {
+        return res.status(400).json({ error: 'Time value must be between 1 and 1440 minutes' });
       }
     }
 

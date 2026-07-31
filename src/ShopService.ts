@@ -317,12 +317,25 @@ export class ShopService {
     }
   }
 
-  async updateShopLocation(shopId: string, latitude: number, longitude: number, address?: string): Promise<boolean> {
+  async updateShopLocation(shopId: string, latitude: number, longitude: number, address?: string, accuracy?: number, timestamp?: string): Promise<boolean> {
     try {
       console.log('📍 Updating shop location...');
       console.log('Shop ID:', shopId);
       console.log('Latitude:', latitude);
       console.log('Longitude:', longitude);
+      console.log('Accuracy:', accuracy);
+      console.log('Timestamp:', timestamp);
+
+      // Get platform config for GPS accuracy validation
+      const { OrderEconomicsService } = await import('./OrderEconomicsService');
+      const orderEconomicsService = new OrderEconomicsService();
+      const config = await orderEconomicsService.getPlatformConfig();
+
+      // Validate GPS accuracy if provided
+      if (accuracy !== undefined && accuracy > config.max_gps_accuracy_meters) {
+        console.warn(`⚠️ GPS accuracy ${accuracy}m exceeds maximum ${config.max_gps_accuracy_meters}m - rejecting update`);
+        return false;
+      }
 
       const locationQuery = `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`;
 
@@ -334,6 +347,18 @@ export class ShopService {
       if (address) {
         updateData.shop_address = address;
       }
+
+      // Store GPS metadata in location_metadata JSONB field
+      const locationMetadata: any = {
+        latitude,
+        longitude,
+        accuracy: accuracy || null,
+        timestamp: timestamp || new Date().toISOString()
+      };
+      updateData.location_metadata = JSON.stringify(locationMetadata);
+
+      // Log the location update event
+      await this.logLocationEvent(shopId, 'gps_updated', `Location updated with accuracy ${accuracy || 'unknown'}m`);
 
       const { data, error } = await supabase
         .from('merchants')
@@ -348,6 +373,10 @@ export class ShopService {
       }
 
       console.log('✅ Shop location updated successfully');
+
+      // Check location health after successful update
+      await this.checkShopLocationHealth(shopId);
+
       return true;
     } catch (error) {
       console.error('❌ Exception in updateShopLocation:', error);
@@ -406,6 +435,153 @@ export class ShopService {
     } catch (error) {
       console.error('❌ Exception in toggleShopStatus:', error);
       return false;
+    }
+  }
+
+  /**
+   * Check and update shop location health
+   * Marks shops as temporarily offline if location is stale
+   * Restores shops to open if location is fresh again
+   */
+  async checkShopLocationHealth(shopId: string): Promise<void> {
+    try {
+      // Get platform config for stale timeout
+      const { OrderEconomicsService } = await import('./OrderEconomicsService');
+      const orderEconomicsService = new OrderEconomicsService();
+      const config = await orderEconomicsService.getPlatformConfig();
+      const staleTimeoutMinutes = config.gps_stale_timeout_minutes;
+
+      // Get shop details
+      const { data: shop, error: shopError } = await supabase
+        .from('merchants')
+        .select('id, is_open, location_metadata, is_temporarily_offline, updated_at')
+        .eq('id', shopId)
+        .single();
+
+      if (shopError || !shop) {
+        console.error('❌ Error fetching shop for health check:', shopError);
+        return;
+      }
+
+      // Only check health if shop is marked as open
+      if (!shop.is_open) {
+        return;
+      }
+
+      // Parse location metadata
+      const locationMetadata = shop.location_metadata ? JSON.parse(shop.location_metadata) : null;
+      const lastUpdated = locationMetadata?.timestamp ? new Date(locationMetadata.timestamp) : null;
+      const now = new Date();
+
+      if (!lastUpdated) {
+        console.warn(`⚠️ Shop ${shopId} has no location metadata - marking as temporarily offline`);
+        await this.markShopTemporarilyOffline(shopId, 'No location data available');
+        return;
+      }
+
+      const minutesSinceUpdate = (now.getTime() - lastUpdated.getTime()) / 60000;
+
+      if (minutesSinceUpdate > staleTimeoutMinutes) {
+        console.warn(`⚠️ Shop ${shopId} location is stale (${minutesSinceUpdate.toFixed(0)}m > ${staleTimeoutMinutes}m) - marking as temporarily offline`);
+        await this.markShopTemporarilyOffline(shopId, `Location stale for ${minutesSinceUpdate.toFixed(0)} minutes`);
+      } else {
+        // Location is fresh - if shop was temporarily offline, restore it
+        if (shop.is_temporarily_offline) {
+          console.log(`✅ Shop ${shopId} location is fresh - restoring to open`);
+          await this.restoreShopFromOffline(shopId);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Exception in checkShopLocationHealth:', error);
+    }
+  }
+
+  /**
+   * Mark a shop as temporarily offline due to stale location
+   */
+  async markShopTemporarilyOffline(shopId: string, reason: string): Promise<boolean> {
+    try {
+      console.log(`🔴 Marking shop ${shopId} as temporarily offline: ${reason}`);
+
+      const { error } = await supabase
+        .from('merchants')
+        .update({
+          is_temporarily_offline: true,
+          offline_reason: reason,
+          offline_since: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', shopId);
+
+      if (error) {
+        console.error('❌ Error marking shop as temporarily offline:', error);
+        return false;
+      }
+
+      // Log the event
+      await this.logLocationEvent(shopId, 'shop_offline', reason);
+
+      console.log('✅ Shop marked as temporarily offline');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in markShopTemporarilyOffline:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Restore a shop from temporarily offline to open
+   */
+  async restoreShopFromOffline(shopId: string): Promise<boolean> {
+    try {
+      console.log(`🟢 Restoring shop ${shopId} from temporarily offline to open`);
+
+      const { error } = await supabase
+        .from('merchants')
+        .update({
+          is_temporarily_offline: false,
+          offline_reason: null,
+          offline_since: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', shopId);
+
+      if (error) {
+        console.error('❌ Error restoring shop from offline:', error);
+        return false;
+      }
+
+      // Log the event
+      await this.logLocationEvent(shopId, 'shop_restored', 'Location restored');
+
+      console.log('✅ Shop restored from temporarily offline');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in restoreShopFromOffline:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Log a location-related event for audit purposes
+   */
+  async logLocationEvent(shopId: string, eventType: string, details: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('location_audit_log')
+        .insert({
+          entity_id: shopId,
+          entity_type: 'shop',
+          event_type: eventType,
+          details: details,
+          timestamp: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('❌ Error logging location event:', error);
+      }
+    } catch (error) {
+      console.error('❌ Exception in logLocationEvent:', error);
     }
   }
 
