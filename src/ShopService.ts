@@ -337,46 +337,28 @@ export class ShopService {
         return false;
       }
 
-      const locationQuery = `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`;
-
-      const updateData: any = {
-        shop_location: locationQuery,
-        updated_at: new Date().toISOString()
-      };
-
-      if (address) {
-        updateData.shop_address = address;
-      }
-
-      // Store GPS metadata in location_metadata JSONB field
-      const locationMetadata: any = {
-        latitude,
-        longitude,
-        accuracy: accuracy || null,
-        timestamp: timestamp || new Date().toISOString()
-      };
-      updateData.location_metadata = JSON.stringify(locationMetadata);
-
-      // Log the location update event
-      await this.logLocationEvent(shopId, 'gps_updated', `Location updated with accuracy ${accuracy || 'unknown'}m`);
-
-      const { data, error } = await supabase
-        .from('merchants')
-        .update(updateData)
-        .eq('id', shopId)
-        .select()
-        .single();
+      // Use Supabase RPC to properly handle PostGIS geometry
+      const { data, error } = await supabase.rpc('update_shop_location', {
+        p_shop_id: shopId,
+        p_latitude: latitude,
+        p_longitude: longitude,
+        p_address: address || null,
+        p_accuracy: accuracy || null,
+        p_timestamp: timestamp || new Date().toISOString()
+      });
 
       if (error) {
         console.error('❌ Error updating shop location:', error);
         return false;
       }
 
-      console.log('✅ Shop location updated successfully');
+      // Log the location update event
+      await this.logLocationEvent(shopId, 'gps_updated', `Location updated with accuracy ${accuracy || 'unknown'}m`);
 
       // Check location health after successful update
       await this.checkShopLocationHealth(shopId);
 
+      console.log('✅ Shop location updated successfully');
       return true;
     } catch (error) {
       console.error('❌ Exception in updateShopLocation:', error);
