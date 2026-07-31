@@ -250,6 +250,56 @@ export class VehicleRestrictionService {
         return false;
       }
 
+      // Additional check: Verify vendor has valid GPS location (location_metadata exists and is fresh)
+      // This prevents orders from shops that were opened before GPS system was implemented
+      const { data: vendor } = await supabase
+        .from('merchants')
+        .select('location_metadata, is_temporarily_offline')
+        .eq('id', (vendorLocation as any).merchant_id)
+        .single();
+
+      if (!vendor) {
+        console.warn('[DIAGNOSTIC] Could not fetch vendor data - NOT ELIGIBLE');
+        console.log('[DIAGNOSTIC] RETURNING: FALSE (vendor not found)');
+        return false;
+      }
+
+      // Check if vendor is temporarily offline due to stale GPS
+      if (vendor.is_temporarily_offline) {
+        console.warn('[DIAGNOSTIC] Vendor is temporarily offline - NOT ELIGIBLE');
+        console.log('[DIAGNOSTIC] RETURNING: FALSE (vendor offline)');
+        return false;
+      }
+
+      // Check if vendor has location_metadata (GPS was captured)
+      if (!vendor.location_metadata) {
+        console.warn('[DIAGNOSTIC] Vendor has no GPS location metadata - NOT ELIGIBLE');
+        console.log('[DIAGNOSTIC] RETURNING: FALSE (no GPS metadata)');
+        return false;
+      }
+
+      // Check if vendor location is fresh
+      const locationMetadata = typeof vendor.location_metadata === 'string' 
+        ? JSON.parse(vendor.location_metadata) 
+        : vendor.location_metadata;
+      const lastUpdated = locationMetadata?.timestamp ? new Date(locationMetadata.timestamp) : null;
+      
+      if (!lastUpdated) {
+        console.warn('[DIAGNOSTIC] Vendor location has no timestamp - NOT ELIGIBLE');
+        console.log('[DIAGNOSTIC] RETURNING: FALSE (no location timestamp)');
+        return false;
+      }
+
+      const gpsConfig = await this.orderEconomicsService.getPlatformConfig();
+      const staleTimeoutMinutes = gpsConfig.gps_stale_timeout_minutes;
+      const minutesSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / 60000;
+
+      if (minutesSinceUpdate > staleTimeoutMinutes) {
+        console.warn(`[DIAGNOSTIC] Vendor location is stale (${minutesSinceUpdate.toFixed(0)}m > ${staleTimeoutMinutes}m) - NOT ELIGIBLE`);
+        console.log('[DIAGNOSTIC] RETURNING: FALSE (vendor location stale)');
+        return false;
+      }
+
       const driverToVendorDistance = this.calculateDistance(driver.current_location, vendorLocation);
       const vendorToCustomerDistance = this.calculateDistance(vendorLocation, customerLocation);
       const driverToCustomerDistance = this.calculateDistance(driver.current_location, customerLocation);

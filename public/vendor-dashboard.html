@@ -611,6 +611,16 @@
 
         async function loadPendingOrders() {
             try {
+                // First check if shop is open
+                const shopResponse = await fetch(`${API_BASE}/shop/${currentShopId}`);
+                const shop = await shopResponse.json();
+                
+                if (!shop.is_open || shop.is_temporarily_offline) {
+                    document.getElementById('orders-section').innerHTML = 
+                        '<div class="empty-state"><p>🔒 Shop is closed. Open your shop to see orders.</p></div>';
+                    return;
+                }
+
                 const response = await fetch(`${API_BASE}/shop/${currentShopId}/orders/pending`);
                 const orders = await response.json();
                 
@@ -1420,22 +1430,31 @@
                         });
 
                         if (response.ok) {
-                            await fetch(`${API_BASE}/shop/${currentShopId}/status`, {
+                            const statusResponse = await fetch(`${API_BASE}/shop/${currentShopId}/status`, {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ isOpen: true })
                             });
 
-                            lastKnownPosition = { latitude, longitude };
-                            gpsRetryCount = 0;
-                            
-                            // Start GPS refresh interval (5 minutes)
-                            startGpsRefresh();
-                            
-                            await loadShopStatus();
-                            alert('Shop opened successfully! GPS is now tracking your location.');
+                            if (statusResponse.ok) {
+                                lastKnownPosition = { latitude, longitude };
+                                gpsRetryCount = 0;
+                                
+                                // Start GPS refresh interval (5 minutes)
+                                startGpsRefresh();
+                                
+                                await loadShopStatus();
+                                await loadDashboard(); // Reload orders
+                                alert('Shop opened successfully! GPS is now tracking your location.');
+                            } else {
+                                const errorData = await statusResponse.json();
+                                console.error('Failed to update shop status:', errorData);
+                                alert('Failed to open shop: ' + (errorData.error || 'Unknown error'));
+                            }
                         } else {
-                            alert('Failed to update shop location. Please try again.');
+                            const errorData = await response.json();
+                            console.error('Failed to update shop location:', errorData);
+                            alert('Failed to update shop location: ' + (errorData.error || 'Unknown error'));
                         }
                     },
                     (error) => {
