@@ -87,6 +87,14 @@ export class OrderEconomicsService {
         });
       }
 
+      console.log('🔍 Config keys loaded from database:', Object.keys(configMap));
+      console.log('🔍 Sample config values:', {
+        bicycle_max_driver_to_vendor_distance: configMap['bicycle_max_driver_to_vendor_distance'],
+        bicycle_max_vendor_to_customer_distance: configMap['bicycle_max_vendor_to_customer_distance'],
+        bicycle_max_total_journey_distance: configMap['bicycle_max_total_journey_distance'],
+        bicycle_max_eta_safety_limit: configMap['bicycle_max_eta_safety_limit']
+      });
+
       // Parse vehicle restrictions from config (optimized for 30-minute food delivery)
       const vehicleRestrictions: Record<string, VehicleRestriction> = {
         bicycle: {
