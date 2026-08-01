@@ -56,7 +56,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
     }
     
     // Generate a simple token (in production, use proper JWT)
-    const token = Buffer.from(`${username}:${Date.now()}`).toString('base64');
+    const token = Buffer.from(`admin:${username}:${Date.now()}`).toString('base64');
     
     console.log('Admin login successful for:', username);
     res.json({ success: true, token, username });
