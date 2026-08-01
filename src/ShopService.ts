@@ -26,6 +26,10 @@ export interface Shop {
   category_id?: string;
   password?: string;
   registration_data?: any;
+  is_temporarily_offline?: boolean;
+  offline_reason?: string;
+  offline_since?: string;
+  location_metadata?: any;
   created_at: string;
   updated_at: string;
 }
