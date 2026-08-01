@@ -223,7 +223,7 @@ export class VehicleRestrictionService {
         return true;
       }
 
-      console.log(`🔍 [DIAGNOSTIC] Vehicle restriction config:`);
+      console.log(`🔍 [DIAGNOSTIC] Vehicle restriction config for ${vehicleType}:`);
       console.log(`🔍 [DIAGNOSTIC] - Driver→Vendor max: ${restriction.max_driver_to_vendor_distance_km} km`);
       console.log(`🔍 [DIAGNOSTIC] - Vendor→Customer max: ${restriction.max_vendor_to_customer_distance_km} km`);
       console.log(`🔍 [DIAGNOSTIC] - Total Journey max: ${restriction.max_total_journey_distance_km} km`);
