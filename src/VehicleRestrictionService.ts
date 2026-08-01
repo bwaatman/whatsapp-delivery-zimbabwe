@@ -181,10 +181,10 @@ export class VehicleRestrictionService {
       console.log(`🔍 [DIAGNOSTIC] vendorLocation:`, JSON.stringify(vendorLocation));
       console.log(`🔍 [DIAGNOSTIC] customerLocation:`, JSON.stringify(customerLocation));
 
-      // Get driver's vehicle type, current location, availability, and online status
+      // Get driver's vehicle type, current location, and availability
       const { data: driver, error: driverError } = await supabase
         .from('drivers')
-        .select('vehicle_type, current_location, is_available, is_online')
+        .select('vehicle_type, current_location, is_available')
         .eq('id', driverId)
         .single();
 
@@ -198,19 +198,11 @@ export class VehicleRestrictionService {
       console.log(`🔍 [DIAGNOSTIC] Driver vehicle_type: ${driver.vehicle_type}`);
       console.log(`🔍 [DIAGNOSTIC] Driver current_location:`, JSON.stringify(driver.current_location));
       console.log(`🔍 [DIAGNOSTIC] Driver is_available: ${driver.is_available}`);
-      console.log(`🔍 [DIAGNOSTIC] Driver is_online: ${driver.is_online}`);
 
       // Check driver availability
       if (!driver.is_available) {
         console.log(`❌ [DIAGNOSTIC] REJECTED: Driver is not available`);
         console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (driver not available)');
-        return false;
-      }
-
-      // Check driver online status
-      if (!driver.is_online) {
-        console.log(`❌ [DIAGNOSTIC] REJECTED: Driver is not online`);
-        console.log('🔍 [DIAGNOSTIC] RETURNING: FALSE (driver not online)');
         return false;
       }
 
