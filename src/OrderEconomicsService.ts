@@ -470,14 +470,29 @@ export class OrderEconomicsService {
     try {
       console.log(`💰 Updating platform config: ${key} = ${value}`);
 
-      const { error } = await supabase
+      // First try to update
+      const { data: updateData, error: updateError } = await supabase
         .from('platform_config')
         .update({ value: value, updated_at: new Date().toISOString() })
-        .eq('key', key);
+        .eq('key', key)
+        .select();
 
-      if (error) {
-        console.error('❌ Error updating platform config:', error);
+      if (updateError) {
+        console.error('❌ Error updating platform config:', updateError);
         return false;
+      }
+
+      // If no rows were updated (key doesn't exist), insert it
+      if (!updateData || updateData.length === 0) {
+        console.log(`🔑 Key ${key} not found, inserting new config`);
+        const { error: insertError } = await supabase
+          .from('platform_config')
+          .insert({ key: key, value: value, updated_at: new Date().toISOString() });
+
+        if (insertError) {
+          console.error('❌ Error inserting platform config:', insertError);
+          return false;
+        }
       }
 
       console.log('✅ Platform config updated successfully');
