@@ -144,24 +144,44 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const email = emailInput.value;
+            const password = passwordInput.value;
             const errorMessage = document.getElementById('errorMessage');
             const loginButton = document.getElementById('loginButton');
 
             console.log('Login attempt:', { email: email, password: password ? '***' : 'empty' });
+            console.log('Email input element:', emailInput);
+            console.log('Email input value:', emailInput.value);
+            console.log('Password input value:', passwordInput.value);
+
+            if (!email || email.trim() === '') {
+                errorMessage.textContent = 'Please enter your email';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            if (!password || password.trim() === '') {
+                errorMessage.textContent = 'Please enter your password';
+                errorMessage.classList.add('show');
+                return;
+            }
 
             errorMessage.classList.remove('show');
             loginButton.classList.add('loading');
             loginButton.textContent = 'Logging in...';
 
             try {
+                const payload = { user_type: 'admin', email: email.trim(), password };
+                console.log('Sending payload:', JSON.stringify(payload));
+
                 const response = await fetch(`${API_BASE}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ user_type: 'admin', email, password })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
