@@ -3,7 +3,16 @@ import { DocumentService } from './DocumentService';
 const multer = require('multer');
 
 const router = Router();
-const documentService = new DocumentService();
+
+// Lazy initialization of DocumentService to ensure env vars are loaded
+let documentService: DocumentService | null = null;
+
+function getDocumentService(): DocumentService {
+  if (!documentService) {
+    documentService = new DocumentService();
+  }
+  return documentService;
+}
 
 // Configure multer for file uploads (memory storage)
 const upload = multer({
@@ -42,7 +51,7 @@ router.post('/documents/upload', upload.single('file'), async (req: MulterReques
     }
 
     // Upload document using buffer directly
-    const result = await documentService.uploadDocumentFromBuffer(
+    const result = await getDocumentService().uploadDocumentFromBuffer(
       entityType as 'driver' | 'vendor',
       entityId,
       documentType,
@@ -69,7 +78,7 @@ router.post('/documents/upload', upload.single('file'), async (req: MulterReques
 // Get a document by ID
 router.get('/documents/:id', async (req: Request, res: Response) => {
   try {
-    const document = await documentService.getDocument(getParam(req.params.id));
+    const document = await getDocumentService().getDocument(getParam(req.params.id));
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }
@@ -90,7 +99,7 @@ router.get('/documents/entity/:type/:id', async (req: Request, res: Response) =>
       return res.status(400).json({ error: 'Invalid entity type. Must be "driver" or "vendor"' });
     }
 
-    const documents = await documentService.getDocumentsByEntity(
+    const documents = await getDocumentService().getDocumentsByEntity(
       entityType as 'driver' | 'vendor',
       entityId
     );
@@ -110,7 +119,7 @@ router.put('/documents/:id/review', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid review status' });
     }
 
-    const success = await documentService.updateDocumentReviewStatus(
+    const success = await getDocumentService().updateDocumentReviewStatus(
       getParam(req.params.id),
       reviewStatus,
       adminComments
@@ -131,7 +140,7 @@ router.put('/documents/:id/review', async (req: Request, res: Response) => {
 router.get('/documents/:id/signed-url', async (req: Request, res: Response) => {
   try {
     const expiresIn = req.query.expiresIn ? parseInt(getParam(req.query.expiresIn as string | string[])) : 3600;
-    const signedUrl = await documentService.getSignedUrl(getParam(req.params.id), expiresIn);
+    const signedUrl = await getDocumentService().getSignedUrl(getParam(req.params.id), expiresIn);
 
     if (!signedUrl) {
       return res.status(404).json({ error: 'Document not found or failed to generate signed URL' });
@@ -147,7 +156,7 @@ router.get('/documents/:id/signed-url', async (req: Request, res: Response) => {
 // Delete a document (admin only)
 router.delete('/documents/:id', async (req: Request, res: Response) => {
   try {
-    const success = await documentService.deleteDocument(getParam(req.params.id));
+    const success = await getDocumentService().deleteDocument(getParam(req.params.id));
 
     if (!success) {
       return res.status(400).json({ error: 'Failed to delete document' });
