@@ -148,7 +148,9 @@
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
             const loginButton = document.getElementById('loginButton');
-            
+
+            console.log('Login attempt:', { email: email, password: password ? '***' : 'empty' });
+
             errorMessage.classList.remove('show');
             loginButton.classList.add('loading');
             loginButton.textContent = 'Logging in...';
