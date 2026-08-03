@@ -472,104 +472,42 @@
         const API_BASE = '/api';
         let uploadedDocuments = {};
 
-        // Generate a simple UUID v4
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-
-        // Generate a temporary entity ID for document uploads
-        const tempEntityId = generateUUID();
-
-        // File upload handling
+        // File upload handling (just show selected file, no upload yet)
         function setupFileUpload(uploadId, inputId, documentType) {
             const uploadEl = document.getElementById(uploadId);
             const inputEl = document.getElementById(inputId);
-            const progressBar = uploadEl.querySelector('.progress-bar');
-            const progressFill = uploadEl.querySelector('.progress-bar-fill');
             const preview = uploadEl.querySelector('.file-preview');
 
             uploadEl.addEventListener('click', () => inputEl.click());
-            
+
             uploadEl.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadEl.style.borderColor = '#667eea';
             });
-            
-            uploadEl.addEventListener('dragleave', () => {
+
+            uploadEl.addEventListener('dragleave', (e) => {
+                e.preventDefault();
                 uploadEl.style.borderColor = '#ddd';
             });
-            
+
             uploadEl.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadEl.style.borderColor = '#ddd';
                 const file = e.dataTransfer.files[0];
                 if (file) {
                     inputEl.files = e.dataTransfer.files;
-                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl);
+                    preview.textContent = `Selected: ${file.name}`;
+                    uploadEl.classList.add('has-file');
                 }
             });
 
             inputEl.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl);
+                    preview.textContent = `Selected: ${file.name}`;
+                    uploadEl.classList.add('has-file');
                 }
             });
-        }
-
-        async function handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl) {
-            // Validate file
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            
-            if (!allowedTypes.includes(file.type)) {
-                alert('Invalid file type. Please upload JPEG, PNG, or PDF files only.');
-                return;
-            }
-            
-            if (file.size > maxSize) {
-                alert('File size exceeds 10MB limit.');
-                return;
-            }
-
-            // Upload file
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('entityType', 'driver');
-            formData.append('entityId', tempEntityId); // Temporary UUID
-            formData.append('documentType', documentType);
-
-            progressBar.classList.add('active');
-            progressFill.style.width = '50%';
-            preview.textContent = 'Uploading...';
-
-            try {
-                const response = await fetch(`${API_BASE}/documents/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    uploadedDocuments[documentType] = data.document_id;
-                    console.log(`✅ Document uploaded: ${documentType} -> ${data.document_id}`);
-                    console.log('📄 Current uploadedDocuments:', uploadedDocuments);
-                    uploadEl.classList.add('has-file');
-                    inputEl.removeAttribute('required'); // Remove required after successful upload
-                    preview.textContent = `Uploaded: ${file.name}`;
-                    progressFill.style.width = '100%';
-                } else {
-                    throw new Error(data.error || 'Upload failed');
-                }
-            } catch (error) {
-                preview.textContent = 'Upload failed: ' + error.message;
-                progressFill.style.background = '#dc3545';
-            }
         }
 
         // Vehicle type handling
@@ -602,21 +540,21 @@
         // Form submission
         document.getElementById('documentsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const submitBtn = document.getElementById('submitBtn');
             const messageDiv = document.getElementById('message');
-            
+
             // Validate password
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            
+
             if (password !== confirmPassword) {
                 messageDiv.className = 'message error';
                 messageDiv.textContent = 'Passwords do not match';
                 messageDiv.style.display = 'block';
                 return;
             }
-            
+
             if (password.length < 6) {
                 messageDiv.className = 'message error';
                 messageDiv.textContent = 'Password must be at least 6 characters';
@@ -624,16 +562,17 @@
                 return;
             }
 
-            // Validate documents
+            // Check all required files are selected
             const vehicleType = document.getElementById('vehicleType').value;
-            const requiredDocs = ['national_id_front', 'national_id_back', 'selfie_with_id', 'profile_photo', 'vehicle_photo'];
-            
+            const requiredFileInputs = ['nationalIdFront', 'nationalIdBack', 'selfieWithId', 'profilePhoto', 'vehiclePhoto'];
+
             if (vehicleType !== 'bicycle') {
-                requiredDocs.push('driver_licence', 'vehicle_registration_book');
+                requiredFileInputs.push('driverLicense', 'vehicleRegistrationBook');
             }
-            
-            for (const doc of requiredDocs) {
-                if (!uploadedDocuments[doc]) {
+
+            for (const inputId of requiredFileInputs) {
+                const input = document.getElementById(inputId);
+                if (!input.files || input.files.length === 0) {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = 'Please upload all required documents';
                     messageDiv.style.display = 'block';
@@ -641,63 +580,125 @@
                 }
             }
 
-            const formData = {
-                full_name: document.getElementById('fullName').value,
-                phone: document.getElementById('phone').value,
-                password: document.getElementById('password').value,
-                email: document.getElementById('email').value,
-                driver_license_number: document.getElementById('driverLicenseNumber').value,
-                vehicle_type: document.getElementById('vehicleType').value,
-                vehicle_registration: document.getElementById('vehicleRegistration').value,
-                vehicle_color: document.getElementById('vehicleColor').value,
-                home_address: document.getElementById('homeAddress').value,
-                emergency_contact_name: document.getElementById('emergencyContactName').value,
-                emergency_contact_phone: document.getElementById('emergencyContactPhone').value,
-                emergency_contact_relationship: document.getElementById('emergencyContactRelationship').value,
-                payout_method: document.getElementById('payoutMethod').value,
-                bicycle_brand: document.getElementById('bicycleBrand').value,
-                frame_number: document.getElementById('frameNumber').value,
-                // Document IDs
-                national_id_front_doc_id: uploadedDocuments.national_id_front,
-                national_id_back_doc_id: uploadedDocuments.national_id_back,
-                selfie_with_id_doc_id: uploadedDocuments.selfie_with_id,
-                profile_photo_doc_id: uploadedDocuments.profile_photo,
-                driver_licence_doc_id: uploadedDocuments.driver_licence,
-                vehicle_registration_book_doc_id: uploadedDocuments.vehicle_registration_book,
-                vehicle_photo_doc_id: uploadedDocuments.vehicle_photo,
-                insurance_doc_id: uploadedDocuments.insurance
-            };
-            
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.textContent = 'Creating driver...';
             messageDiv.style.display = 'none';
-            
+
             try {
-                const response = await fetch(`${API_BASE}/drivers/register`, {
+                // Step 1: Create driver first
+                const driverData = {
+                    full_name: document.getElementById('fullName').value,
+                    phone: document.getElementById('phone').value,
+                    password: document.getElementById('password').value,
+                    email: document.getElementById('email').value,
+                    driver_license_number: document.getElementById('driverLicenseNumber').value,
+                    vehicle_type: document.getElementById('vehicleType').value,
+                    vehicle_registration: document.getElementById('vehicleRegistration').value,
+                    vehicle_color: document.getElementById('vehicleColor').value,
+                    home_address: document.getElementById('homeAddress').value,
+                    emergency_contact_name: document.getElementById('emergencyContactName').value,
+                    emergency_contact_phone: document.getElementById('emergencyContactPhone').value,
+                    emergency_contact_relationship: document.getElementById('emergencyContactRelationship').value,
+                    payout_method: document.getElementById('payoutMethod').value,
+                    bicycle_brand: document.getElementById('bicycleBrand').value,
+                    frame_number: document.getElementById('frameNumber').value
+                };
+
+                const driverResponse = await fetch(`${API_BASE}/drivers/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(driverData)
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    messageDiv.className = 'message success';
-                    messageDiv.textContent = 'Registration submitted successfully! Your application is pending approval.';
-                    messageDiv.style.display = 'block';
-                    document.getElementById('registrationForm').reset();
-                    document.getElementById('documentsForm').reset();
-                    uploadedDocuments = {};
-                } else {
-                    messageDiv.className = 'message error';
-                    messageDiv.textContent = data.error || 'Registration failed. Please try again.';
-                    messageDiv.style.display = 'block';
+
+                const driverResult = await driverResponse.json();
+
+                if (!driverResponse.ok) {
+                    throw new Error(driverResult.error || 'Failed to create driver');
                 }
+
+                const driverId = driverResult.data.driver.id;
+                const registrationId = driverResult.data.registration_request.id;
+                console.log('✅ Driver created:', driverId);
+
+                // Step 2: Upload documents with actual driver ID
+                submitBtn.textContent = 'Uploading documents...';
+                uploadedDocuments = {};
+
+                const documentTypes = [
+                    { inputId: 'nationalIdFront', type: 'national_id_front' },
+                    { inputId: 'nationalIdBack', type: 'national_id_back' },
+                    { inputId: 'selfieWithId', type: 'selfie_with_id' },
+                    { inputId: 'profilePhoto', type: 'profile_photo' },
+                    { inputId: 'vehiclePhoto', type: 'vehicle_photo' }
+                ];
+
+                if (vehicleType !== 'bicycle') {
+                    documentTypes.push(
+                        { inputId: 'driverLicense', type: 'driver_licence' },
+                        { inputId: 'vehicleRegistrationBook', type: 'vehicle_registration_book' }
+                    );
+                }
+
+                for (const doc of documentTypes) {
+                    const input = document.getElementById(doc.inputId);
+                    if (input.files && input.files.length > 0) {
+                        const formData = new FormData();
+                        formData.append('file', input.files[0]);
+                        formData.append('entityType', 'driver');
+                        formData.append('entityId', driverId);
+                        formData.append('documentType', doc.type);
+
+                        const uploadResponse = await fetch(`${API_BASE}/documents/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const uploadData = await uploadResponse.json();
+
+                        if (uploadData.success) {
+                            uploadedDocuments[doc.type] = uploadData.document_id;
+                            console.log(`✅ Uploaded ${doc.type}: ${uploadData.document_id}`);
+                        } else {
+                            throw new Error(`Failed to upload ${doc.type}`);
+                        }
+                    }
+                }
+
+                // Step 3: Update registration with document IDs
+                submitBtn.textContent = 'Finalizing registration...';
+
+                const updateResponse = await fetch(`${API_BASE}/driver-registrations/${registrationId}/documents`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        national_id_front_doc_id: uploadedDocuments.national_id_front,
+                        national_id_back_doc_id: uploadedDocuments.national_id_back,
+                        selfie_with_id_doc_id: uploadedDocuments.selfie_with_id,
+                        profile_photo_doc_id: uploadedDocuments.profile_photo,
+                        driver_licence_doc_id: uploadedDocuments.driver_licence,
+                        vehicle_registration_book_doc_id: uploadedDocuments.vehicle_registration_book,
+                        vehicle_photo_doc_id: uploadedDocuments.vehicle_photo
+                    })
+                });
+
+                if (!updateResponse.ok) {
+                    console.warn('Warning: Failed to update document IDs, but driver was created');
+                }
+
+                messageDiv.className = 'message success';
+                messageDiv.textContent = 'Registration submitted successfully! Your application is pending approval.';
+                messageDiv.style.display = 'block';
+                document.getElementById('registrationForm').reset();
+                document.getElementById('documentsForm').reset();
+                uploadedDocuments = {};
+
             } catch (error) {
                 messageDiv.className = 'message error';
-                messageDiv.textContent = 'Network error. Please check your connection and try again.';
+                messageDiv.textContent = error.message || 'Registration failed. Please try again.';
                 messageDiv.style.display = 'block';
             } finally {
                 submitBtn.disabled = false;
