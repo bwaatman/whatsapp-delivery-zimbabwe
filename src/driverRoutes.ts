@@ -369,13 +369,29 @@ router.get('/driver-registrations/:id', async (req: Request, res: Response) => {
       registration.insurance_doc_id
     ].filter(Boolean);
 
+    console.log('📄 Document IDs for registration:', documentIds);
+    console.log('📄 Registration document fields:', {
+      national_id_front: registration.national_id_front_doc_id,
+      national_id_back: registration.national_id_back_doc_id,
+      selfie_with_id: registration.selfie_with_id_doc_id,
+      profile_photo: registration.profile_photo_doc_id,
+      driver_licence: registration.driver_licence_doc_id,
+      vehicle_registration_book: registration.vehicle_registration_book_doc_id,
+      vehicle_photo: registration.vehicle_photo_doc_id,
+      insurance: registration.insurance_doc_id
+    });
+
     let documents = [];
     if (documentIds.length > 0) {
-      const { data: docs } = await supabase
+      const { data: docs, error } = await supabase
         .from('documents')
         .select('*')
         .in('id', documentIds);
       documents = docs || [];
+      console.log('📄 Retrieved documents:', documents.length, documents);
+      if (error) {
+        console.error('❌ Error fetching documents:', error);
+      }
     }
 
     res.json({ registration, documents });

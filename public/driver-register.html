@@ -445,9 +445,21 @@
             </div>
 
             <div class="step-buttons">
-                <button type="submit" id="submitBtn">Submit Registration</button>
+                <button type="button" id="reviewBtn">Review Information</button>
+                <button type="submit" id="submitBtn" style="display: none;">Submit Registration</button>
             </div>
         </form>
+
+        <div id="reviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+            <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 50px auto; max-height: 80vh; overflow-y: auto;">
+                <h2>Review Your Information</h2>
+                <div id="reviewContent"></div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button type="button" id="editBtn" style="padding: 10px 20px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Edit</button>
+                    <button type="button" id="confirmSubmitBtn" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Submit Registration</button>
+                </div>
+            </div>
+        </div>
 
         <div id="message" class="message"></div>
 
@@ -688,6 +700,65 @@
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Registration';
+            }
+        });
+
+        // Review modal functionality
+        function populateReview() {
+            const reviewContent = document.getElementById('reviewContent');
+            const formData = {
+                full_name: document.getElementById('fullName').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                driver_license_number: document.getElementById('driverLicenseNumber').value,
+                vehicle_type: document.getElementById('vehicleType').value,
+                vehicle_registration: document.getElementById('vehicleRegistration').value,
+                vehicle_color: document.getElementById('vehicleColor').value,
+                home_address: document.getElementById('homeAddress').value,
+                emergency_contact_name: document.getElementById('emergencyContactName').value,
+                emergency_contact_phone: document.getElementById('emergencyContactPhone').value,
+                emergency_contact_relationship: document.getElementById('emergencyContactRelationship').value,
+                payout_method: document.getElementById('payoutMethod').value,
+                bicycle_brand: document.getElementById('bicycleBrand').value,
+                frame_number: document.getElementById('frameNumber').value
+            };
+
+            let html = '<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">';
+            html += '<h3>Personal Information</h3>';
+            for (const [key, value] of Object.entries(formData)) {
+                if (value) {
+                    html += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
+                }
+            }
+            html += '<h3>Uploaded Documents</h3>';
+            html += '<ul>';
+            for (const [key, value] of Object.entries(uploadedDocuments)) {
+                html += `<li>${key.replace(/_/g, ' ')}: Uploaded</li>`;
+            }
+            html += '</ul>';
+            html += '</div>';
+
+            reviewContent.innerHTML = html;
+        }
+
+        document.getElementById('reviewBtn').addEventListener('click', () => {
+            populateReview();
+            document.getElementById('reviewModal').style.display = 'block';
+        });
+
+        document.getElementById('editBtn').addEventListener('click', () => {
+            document.getElementById('reviewModal').style.display = 'none';
+        });
+
+        document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
+            document.getElementById('reviewModal').style.display = 'none';
+            document.getElementById('documentsForm').dispatchEvent(new Event('submit'));
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('reviewModal').addEventListener('click', (e) => {
+            if (e.target.id === 'reviewModal') {
+                document.getElementById('reviewModal').style.display = 'none';
             }
         });
 
