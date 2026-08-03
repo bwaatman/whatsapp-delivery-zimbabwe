@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { DocumentService } from './DocumentService';
-import multer from 'multer';
+const multer = require('multer');
 
 const router = Router();
 const documentService = new DocumentService();
@@ -15,7 +15,7 @@ const upload = multer({
 
 // Extend Request type to include file property
 interface MulterRequest extends Request {
-  file?: Express.Multer.File;
+  file?: any;
 }
 
 // Helper function to safely extract string from params
