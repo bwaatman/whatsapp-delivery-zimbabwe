@@ -397,7 +397,7 @@
 
             <div class="document-section">
                 <h3>🚗 Vehicle Documents</h3>
-                <div class="form-group">
+                <div class="form-group" id="driverLicenseField">
                     <label>Driver License *</label>
                     <div class="file-upload" id="driverLicenseUpload">
                         <input type="file" id="driverLicense" name="driverLicense" accept="image/jpeg,image/png,application/pdf" required>
@@ -407,7 +407,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="vehicleRegistrationBookField">
                     <label>Vehicle Registration Book *</label>
                     <div class="file-upload" id="vehicleRegistrationBookUpload">
                         <input type="file" id="vehicleRegistrationBook" name="vehicleRegistrationBook" accept="image/jpeg,image/png,application/pdf" required>
@@ -601,13 +601,25 @@
             const vehicleType = e.target.value;
             const bicycleFields = document.getElementById('bicycleFields');
             const frameNumberField = document.getElementById('frameNumberField');
-            
+            const driverLicenseField = document.getElementById('driverLicenseField');
+            const vehicleRegistrationBookField = document.getElementById('vehicleRegistrationBookField');
+            const driverLicenseInput = document.getElementById('driverLicense');
+            const vehicleRegistrationBookInput = document.getElementById('vehicleRegistrationBook');
+
             if (vehicleType === 'bicycle') {
                 bicycleFields.style.display = 'block';
                 frameNumberField.style.display = 'block';
+                driverLicenseField.style.display = 'none';
+                vehicleRegistrationBookField.style.display = 'none';
+                driverLicenseInput.removeAttribute('required');
+                vehicleRegistrationBookInput.removeAttribute('required');
             } else {
                 bicycleFields.style.display = 'none';
                 frameNumberField.style.display = 'none';
+                driverLicenseField.style.display = 'block';
+                vehicleRegistrationBookField.style.display = 'block';
+                driverLicenseInput.setAttribute('required', 'required');
+                vehicleRegistrationBookInput.setAttribute('required', 'required');
             }
         });
 
@@ -650,7 +662,14 @@
         }
 
         function validateStep2() {
-            const requiredDocs = ['nationalIdFront', 'nationalIdBack', 'selfieWithId', 'profilePhoto', 'driverLicense', 'vehicleRegistrationBook', 'vehiclePhoto'];
+            const vehicleType = document.getElementById('vehicleType').value;
+            const requiredDocs = ['national_id_front', 'national_id_back', 'selfie_with_id', 'profile_photo', 'vehicle_photo'];
+            
+            // Add driver license and vehicle registration book for non-bicycle vehicles
+            if (vehicleType !== 'bicycle') {
+                requiredDocs.push('driver_licence', 'vehicle_registration_book');
+            }
+            
             const messageDiv = document.getElementById('message');
             
             for (const doc of requiredDocs) {
