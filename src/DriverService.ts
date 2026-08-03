@@ -748,7 +748,7 @@ export class DriverService {
         return null;
       }
 
-      // Then create the registration request
+      // Then create the registration request with document references
       const { data, error } = await supabase
         .from('driver_registration_requests')
         .insert({
@@ -764,6 +764,25 @@ export class DriverService {
           home_address: registrationData.home_address,
           emergency_contact_name: registrationData.emergency_contact_name,
           emergency_contact_phone: registrationData.emergency_contact_phone,
+          // New document fields
+          national_id_front_doc_id: registrationData.national_id_front_doc_id,
+          national_id_back_doc_id: registrationData.national_id_back_doc_id,
+          selfie_with_id_doc_id: registrationData.selfie_with_id_doc_id,
+          profile_photo_doc_id: registrationData.profile_photo_doc_id,
+          emergency_contact_relationship: registrationData.emergency_contact_relationship,
+          payout_method: registrationData.payout_method,
+          payout_details: registrationData.payout_details,
+          // Vehicle-specific documents
+          bicycle_photo_doc_id: registrationData.bicycle_photo_doc_id,
+          bicycle_brand: registrationData.bicycle_brand,
+          frame_number: registrationData.frame_number,
+          driver_licence_doc_id: registrationData.driver_licence_doc_id,
+          vehicle_registration_book_doc_id: registrationData.vehicle_registration_book_doc_id,
+          motorcycle_photo_doc_id: registrationData.motorcycle_photo_doc_id,
+          vehicle_photo_doc_id: registrationData.vehicle_photo_doc_id,
+          insurance_doc_id: registrationData.insurance_doc_id,
+          // Verification status
+          verification_status: 'submitted',
           registration_data: registrationData,
           status: 'pending'
         })

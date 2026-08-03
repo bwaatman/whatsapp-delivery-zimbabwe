@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - ZimDelivery</title>
+    <title>Admin Dashboard - Svika</title>
     <script>
         // Check authentication on page load
         if (!localStorage.getItem('adminAuth') || localStorage.getItem('adminAuth') !== 'true') {
@@ -267,6 +267,150 @@
         .profile-modal strong {
             color: #4a4a4a;
         }
+
+        .document-modal {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .document-modal h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+        }
+
+        .document-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .document-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .document-item h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .document-preview {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background: #eee;
+        }
+
+        .document-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .status-pending-doc {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved-doc {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected-doc {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .document-actions button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .comment-box {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .verification-status {
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .verification-status h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .admin-comments {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .btn-review {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-review:hover {
+            background: #138496;
+        }
+
+        .btn-resubmit {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-resubmit:hover {
+            background: #e0a800;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: black;
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .modal-overlay {
+            position: fixed;
+        }
     </style>
 </head>
 <body>
@@ -393,6 +537,32 @@
         </div>
     </div>
 
+    <!-- Document Review Modal -->
+    <div class="modal-overlay" id="documentModal">
+        <div class="document-modal">
+            <button class="close-modal" onclick="closeDocumentModal()">&times;</button>
+            <h3 id="documentModalTitle">Document Review</h3>
+            <div class="verification-status">
+                <h4>Verification Status</h4>
+                <p id="verificationStatusText">Pending</p>
+                <div id="adminCommentsSection" class="admin-comments" style="display: none;">
+                    <strong>Admin Comments:</strong>
+                    <p id="adminCommentsText"></p>
+                </div>
+            </div>
+            <div id="documentGrid" class="document-grid"></div>
+            <div class="form-group">
+                <label>Admin Comments</label>
+                <textarea id="reviewComments" class="comment-box" placeholder="Enter your comments for the applicant..."></textarea>
+            </div>
+            <div class="document-actions">
+                <button class="btn btn-approve" onclick="approveAllDocuments()">Approve All</button>
+                <button class="btn btn-reject" onclick="rejectRegistration()">Reject Registration</button>
+                <button class="btn btn-resubmit" onclick="requestResubmission()">Request Resubmission</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api';
 
@@ -480,15 +650,17 @@
                     return;
                 }
 
-                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Verification Status</th><th>Actions</th></tr></thead><tbody>';
                 
                 registrations.forEach(registration => {
+                    const verificationStatus = registration.verification_status || 'pending';
                     html += `
                         <tr>
                             <td>${registration.full_name}</td>
                             <td>${registration.phone}</td>
-                            <td><span class="status-badge status-pending">Pending</span></td>
+                            <td><span class="status-badge status-${verificationStatus}">${verificationStatus.charAt(0).toUpperCase() + verificationStatus.slice(1)}</span></td>
                             <td>
+                                <button class="btn btn-review" onclick="reviewDriverDocuments('${registration.id}')">Review Documents</button>
                                 <button class="btn btn-approve" onclick="approveDriver('${registration.id}')">Approve</button>
                                 <button class="btn btn-reject" onclick="rejectDriver('${registration.id}')">Reject</button>
                             </td>
@@ -519,15 +691,17 @@
                     return;
                 }
 
-                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Phone</th><th>Verification Status</th><th>Actions</th></tr></thead><tbody>';
                 
                 registrations.forEach(registration => {
+                    const verificationStatus = registration.verification_status || 'pending';
                     html += `
                         <tr>
                             <td>${registration.business_name}</td>
                             <td>${registration.business_phone}</td>
-                            <td><span class="status-badge status-pending">Pending</span></td>
+                            <td><span class="status-badge status-${verificationStatus}">${verificationStatus.charAt(0).toUpperCase() + verificationStatus.slice(1)}</span></td>
                             <td>
+                                <button class="btn btn-review" onclick="reviewVendorDocuments('${registration.id}')">Review Documents</button>
                                 <button class="btn btn-approve" onclick="approveVendor('${registration.id}')">Approve</button>
                                 <button class="btn btn-reject" onclick="rejectVendor('${registration.id}')">Reject</button>
                             </td>
@@ -570,10 +744,10 @@
             if (!reason) return;
             
             try {
-                const response = await fetch(`${API_BASE}/admin/driver-registrations/${driverId}/reject`, {
-                    method: 'POST',
+                const response = await fetch(`${API_BASE}/admin/driver-registrations/${driverId}/reject-with-comments`, {
+                    method: 'PUT',
                     headers: getAuthHeaders(),
-                    body: JSON.stringify({ reason })
+                    body: JSON.stringify({ comments: reason })
                 });
                 
                 if (response.ok) {
@@ -586,6 +760,227 @@
                 console.error('Error rejecting driver:', error);
                 alert('Error rejecting driver');
             }
+        }
+
+        // Document review functions
+        let currentReviewType = '';
+        let currentReviewId = '';
+        let currentDocuments = [];
+
+        async function reviewDriverDocuments(registrationId) {
+            currentReviewType = 'driver';
+            currentReviewId = registrationId;
+            
+            try {
+                const response = await fetch(`${API_BASE}/driver-registrations/${registrationId}`, {
+                    headers: getAuthHeaders()
+                });
+                const data = await response.json();
+                
+                document.getElementById('documentModalTitle').textContent = `Driver Document Review - ${data.registration.full_name}`;
+                document.getElementById('verificationStatusText').textContent = data.registration.verification_status || 'pending';
+                
+                if (data.registration.admin_comments) {
+                    document.getElementById('adminCommentsSection').style.display = 'block';
+                    document.getElementById('adminCommentsText').textContent = data.registration.admin_comments;
+                } else {
+                    document.getElementById('adminCommentsSection').style.display = 'none';
+                }
+                
+                renderDocuments(data.documents);
+                document.getElementById('documentModal').style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                alert('Error loading documents');
+            }
+        }
+
+        async function reviewVendorDocuments(registrationId) {
+            currentReviewType = 'vendor';
+            currentReviewId = registrationId;
+            
+            try {
+                const response = await fetch(`${API_BASE}/vendor-registrations/${registrationId}`, {
+                    headers: getAuthHeaders()
+                });
+                const data = await response.json();
+                
+                document.getElementById('documentModalTitle').textContent = `Vendor Document Review - ${data.registration.business_name}`;
+                document.getElementById('verificationStatusText').textContent = data.registration.verification_status || 'pending';
+                
+                if (data.registration.admin_comments) {
+                    document.getElementById('adminCommentsSection').style.display = 'block';
+                    document.getElementById('adminCommentsText').textContent = data.registration.admin_comments;
+                } else {
+                    document.getElementById('adminCommentsSection').style.display = 'none';
+                }
+                
+                renderDocuments(data.documents);
+                document.getElementById('documentModal').style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                alert('Error loading documents');
+            }
+        }
+
+        function renderDocuments(documents) {
+            currentDocuments = documents;
+            const grid = document.getElementById('documentGrid');
+            
+            if (!documents || documents.length === 0) {
+                grid.innerHTML = '<p>No documents uploaded</p>';
+                return;
+            }
+            
+            let html = '';
+            documents.forEach(doc => {
+                const statusClass = doc.review_status ? `status-${doc.review_status}-doc` : 'status-pending-doc';
+                const statusText = doc.review_status ? doc.review_status.charAt(0).toUpperCase() + doc.review_status.slice(1) : 'Pending';
+                
+                html += `
+                    <div class="document-item">
+                        <h4>${doc.document_type.replace(/_/g, ' ')}</h4>
+                        <span class="document-status ${statusClass}">${statusText}</span>
+                        ${doc.file_path ? `<img src="${doc.file_path}" class="document-preview" alt="Document preview" onerror="this.style.display='none'">` : '<div class="document-preview" style="display:flex;align-items:center;justify-content:center;color:#999;">No preview</div>'}
+                        ${doc.admin_comments ? `<p style="font-size:12px;color:#666;margin-top:5px;"><strong>Comments:</strong> ${doc.admin_comments}</p>` : ''}
+                        <div class="document-actions">
+                            <button class="btn btn-approve" onclick="reviewDocument('${doc.id}', 'approved')">Approve</button>
+                            <button class="btn btn-reject" onclick="reviewDocument('${doc.id}', 'rejected')">Reject</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+
+        async function reviewDocument(documentId, status) {
+            const comments = prompt(`Enter comments for ${status} document:`);
+            
+            try {
+                const endpoint = currentReviewType === 'driver' 
+                    ? `${API_BASE}/admin/driver-registrations/${currentReviewId}/documents/${documentId}/review`
+                    : `${API_BASE}/admin/vendor-registrations/${currentReviewId}/documents/${documentId}/review`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        reviewStatus: status,
+                        adminComments: comments
+                    })
+                });
+                
+                if (response.ok) {
+                    alert(`Document ${status} successfully!`);
+                    // Reload the documents
+                    if (currentReviewType === 'driver') {
+                        reviewDriverDocuments(currentReviewId);
+                    } else {
+                        reviewVendorDocuments(currentReviewId);
+                    }
+                } else {
+                    alert('Failed to update document status');
+                }
+            } catch (error) {
+                console.error('Error reviewing document:', error);
+                alert('Error reviewing document');
+            }
+        }
+
+        async function approveAllDocuments() {
+            if (!confirm('Are you sure you want to approve this registration and all documents?')) return;
+            
+            try {
+                const comments = document.getElementById('reviewComments').value;
+                const endpoint = currentReviewType === 'driver'
+                    ? `${API_BASE}/admin/driver-registrations/${currentReviewId}/approve-with-documents`
+                    : `${API_BASE}/admin/vendor-registrations/${currentReviewId}/approve-with-documents`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ adminId: localStorage.getItem('adminUser')?.id })
+                });
+                
+                if (response.ok) {
+                    alert('Registration approved successfully!');
+                    closeDocumentModal();
+                    loadDashboard();
+                } else {
+                    alert('Failed to approve registration');
+                }
+            } catch (error) {
+                console.error('Error approving registration:', error);
+                alert('Error approving registration');
+            }
+        }
+
+        async function rejectRegistration() {
+            const comments = document.getElementById('reviewComments').value || prompt('Enter rejection reason:');
+            if (!comments) return;
+            
+            try {
+                const endpoint = currentReviewType === 'driver'
+                    ? `${API_BASE}/admin/driver-registrations/${currentReviewId}/reject-with-comments`
+                    : `${API_BASE}/admin/vendor-registrations/${currentReviewId}/reject-with-comments`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        adminId: localStorage.getItem('adminUser')?.id,
+                        comments: comments
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('Registration rejected successfully!');
+                    closeDocumentModal();
+                    loadDashboard();
+                } else {
+                    alert('Failed to reject registration');
+                }
+            } catch (error) {
+                console.error('Error rejecting registration:', error);
+                alert('Error rejecting registration');
+            }
+        }
+
+        async function requestResubmission() {
+            const comments = document.getElementById('reviewComments').value || prompt('Enter comments for resubmission request:');
+            if (!comments) return;
+            
+            try {
+                const endpoint = currentReviewType === 'driver'
+                    ? `${API_BASE}/admin/driver-registrations/${currentReviewId}/request-resubmission`
+                    : `${API_BASE}/admin/vendor-registrations/${currentReviewId}/request-resubmission`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ comments })
+                });
+                
+                if (response.ok) {
+                    alert('Resubmission requested successfully!');
+                    closeDocumentModal();
+                    loadDashboard();
+                } else {
+                    alert('Failed to request resubmission');
+                }
+            } catch (error) {
+                console.error('Error requesting resubmission:', error);
+                alert('Error requesting resubmission');
+            }
+        }
+
+        function closeDocumentModal() {
+            document.getElementById('documentModal').style.display = 'none';
+            document.getElementById('reviewComments').value = '';
+            currentReviewType = '';
+            currentReviewId = '';
+            currentDocuments = [];
         }
 
         async function approveDriver(driverId) {

@@ -997,7 +997,7 @@ export class ShopService {
         return null;
       }
 
-      // Then create the registration request
+      // Then create the registration request with document references
       const { data, error } = await supabase
         .from('vendor_registration_requests')
         .insert({
@@ -1013,6 +1013,29 @@ export class ShopService {
           operating_hours: registrationData.operating_hours,
           shop_location: registrationData.shop_location,
           shop_address: registrationData.shop_address,
+          // Registration type (individual vs registered business)
+          registration_type: registrationData.registration_type || 'individual',
+          // Individual vendor documents
+          national_id_doc_id: registrationData.national_id_doc_id,
+          proof_of_address_doc_id: registrationData.proof_of_address_doc_id,
+          // Registered business documents
+          certificate_of_incorporation_doc_id: registrationData.certificate_of_incorporation_doc_id,
+          tax_number: registrationData.tax_number,
+          vat_number: registrationData.vat_number,
+          business_licence_doc_id: registrationData.business_licence_doc_id,
+          trading_licence_doc_id: registrationData.trading_licence_doc_id,
+          // Business photos (required for all)
+          shop_front_photo_doc_id: registrationData.shop_front_photo_doc_id,
+          interior_photo_doc_id: registrationData.interior_photo_doc_id,
+          // Optional business area photos
+          kitchen_photo_doc_id: registrationData.kitchen_photo_doc_id,
+          storage_photo_doc_id: registrationData.storage_photo_doc_id,
+          // Food vendor optional documents
+          health_certificate_doc_id: registrationData.health_certificate_doc_id,
+          food_handling_permit_doc_id: registrationData.food_handling_permit_doc_id,
+          restaurant_licence_doc_id: registrationData.restaurant_licence_doc_id,
+          // Verification status
+          verification_status: 'submitted',
           registration_data: registrationData,
           status: 'pending'
         })

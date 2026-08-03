@@ -8,6 +8,7 @@ import adminRoutes from './adminRoutes';
 import authRoutes from './authRoutes';
 import categoryRoutes from './categoryRoutes';
 import paymentRoutes from './paymentRoutes';
+import documentRoutes from './documentRoutes';
 import { WhatsAppBotService } from './WhatsAppBotService';
 import { setWhatsAppBotService as setShopWhatsAppBotService } from './ShopService';
 import { setWhatsAppBotService as setDriverWhatsAppBotService } from './DriverService';
@@ -242,6 +243,7 @@ app.use('/api', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', paymentRoutes);
+app.use('/api', documentRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

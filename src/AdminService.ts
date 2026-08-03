@@ -816,4 +816,457 @@ export class AdminService {
       return null;
     }
   }
+
+  // Document review methods
+  async updateDriverDocumentReviewStatus(
+    registrationId: string,
+    documentId: string,
+    reviewStatus: 'approved' | 'rejected' | 'needs_resubmission',
+    adminComments?: string
+  ): Promise<boolean> {
+    try {
+      console.log(`📄 Updating driver document ${documentId} review status to ${reviewStatus}`);
+
+      const { error } = await supabase
+        .from('documents')
+        .update({
+          admin_review_status: reviewStatus,
+          admin_comments: adminComments || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', documentId);
+
+      if (error) {
+        console.error('❌ Error updating document review status:', error);
+        return false;
+      }
+
+      // Update registration verification status if all documents are approved
+      await this.updateDriverVerificationStatus(registrationId);
+
+      console.log('✅ Document review status updated successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in updateDriverDocumentReviewStatus:', error);
+      return false;
+    }
+  }
+
+  async updateVendorDocumentReviewStatus(
+    registrationId: string,
+    documentId: string,
+    reviewStatus: 'approved' | 'rejected' | 'needs_resubmission',
+    adminComments?: string
+  ): Promise<boolean> {
+    try {
+      console.log(`📄 Updating vendor document ${documentId} review status to ${reviewStatus}`);
+
+      const { error } = await supabase
+        .from('documents')
+        .update({
+          admin_review_status: reviewStatus,
+          admin_comments: adminComments || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', documentId);
+
+      if (error) {
+        console.error('❌ Error updating document review status:', error);
+        return false;
+      }
+
+      // Update registration verification status if all documents are approved
+      await this.updateVendorVerificationStatus(registrationId);
+
+      console.log('✅ Document review status updated successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in updateVendorDocumentReviewStatus:', error);
+      return false;
+    }
+  }
+
+  async approveDriverWithDocuments(registrationId: string, adminId?: string): Promise<boolean> {
+    try {
+      console.log('✅ Approving driver registration with documents:', registrationId);
+
+      // Get registration details
+      const { data: registration, error: regError } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting driver registration:', regError);
+        return false;
+      }
+
+      // Update registration status
+      const { error: updateRegError } = await supabase
+        .from('driver_registration_requests')
+        .update({
+          status: 'approved',
+          verification_status: 'approved',
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update driver status and set verified badge
+      const { error: updateDriverError } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'approved',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString(),
+          is_verified: true,
+          verified_at: new Date().toISOString()
+        })
+        .eq('id', registration.driver_id);
+
+      if (updateDriverError) {
+        console.error('❌ Error updating driver:', updateDriverError);
+        return false;
+      }
+
+      console.log('✅ Driver registration approved with documents successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in approveDriverWithDocuments:', error);
+      return false;
+    }
+  }
+
+  async approveVendorWithDocuments(registrationId: string, adminId?: string): Promise<boolean> {
+    try {
+      console.log('✅ Approving vendor registration with documents:', registrationId);
+
+      // Get registration details
+      const { data: registration, error: regError } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting vendor registration:', regError);
+        return false;
+      }
+
+      // Update registration status
+      const { error: updateRegError } = await supabase
+        .from('vendor_registration_requests')
+        .update({
+          status: 'approved',
+          verification_status: 'approved',
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update merchant status and set verified badge
+      const { error: updateMerchantError } = await supabase
+        .from('merchants')
+        .update({
+          registration_status: 'approved',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString(),
+          active: true,
+          is_verified: true,
+          verified_at: new Date().toISOString()
+        })
+        .eq('id', registration.merchant_id);
+
+      if (updateMerchantError) {
+        console.error('❌ Error updating merchant:', updateMerchantError);
+        return false;
+      }
+
+      console.log('✅ Vendor registration approved with documents successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in approveVendorWithDocuments:', error);
+      return false;
+    }
+  }
+
+  async rejectDriverWithComments(registrationId: string, adminId?: string, comments?: string): Promise<boolean> {
+    try {
+      console.log('❌ Rejecting driver registration with comments:', registrationId);
+
+      // Get registration details
+      const { data: registration, error: regError } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting driver registration:', regError);
+        return false;
+      }
+
+      // Update registration status
+      const { error: updateRegError } = await supabase
+        .from('driver_registration_requests')
+        .update({
+          status: 'rejected',
+          verification_status: 'rejected',
+          rejection_reason: comments,
+          admin_review_comments: comments,
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update driver status
+      const { error: updateDriverError } = await supabase
+        .from('drivers')
+        .update({
+          registration_status: 'rejected',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', registration.driver_id);
+
+      if (updateDriverError) {
+        console.error('❌ Error updating driver:', updateDriverError);
+        return false;
+      }
+
+      console.log('✅ Driver registration rejected successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in rejectDriverWithComments:', error);
+      return false;
+    }
+  }
+
+  async rejectVendorWithComments(registrationId: string, adminId?: string, comments?: string): Promise<boolean> {
+    try {
+      console.log('❌ Rejecting vendor registration with comments:', registrationId);
+
+      // Get registration details
+      const { data: registration, error: regError } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (regError || !registration) {
+        console.error('❌ Error getting vendor registration:', regError);
+        return false;
+      }
+
+      // Update registration status
+      const { error: updateRegError } = await supabase
+        .from('vendor_registration_requests')
+        .update({
+          status: 'rejected',
+          verification_status: 'rejected',
+          rejection_reason: comments,
+          admin_review_comments: comments,
+          reviewed_by: adminId || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (updateRegError) {
+        console.error('❌ Error updating registration request:', updateRegError);
+        return false;
+      }
+
+      // Update merchant status
+      const { error: updateMerchantError } = await supabase
+        .from('merchants')
+        .update({
+          registration_status: 'rejected',
+          approved_by: adminId || null,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', registration.merchant_id);
+
+      if (updateMerchantError) {
+        console.error('❌ Error updating merchant:', updateMerchantError);
+        return false;
+      }
+
+      console.log('✅ Vendor registration rejected successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in rejectVendorWithComments:', error);
+      return false;
+    }
+  }
+
+  async requestDriverResubmission(registrationId: string, comments?: string): Promise<boolean> {
+    try {
+      console.log('🔄 Requesting driver registration resubmission:', registrationId);
+
+      const { error } = await supabase
+        .from('driver_registration_requests')
+        .update({
+          verification_status: 'needs_resubmission',
+          admin_review_comments: comments,
+          status: 'pending'
+        })
+        .eq('id', registrationId);
+
+      if (error) {
+        console.error('❌ Error requesting resubmission:', error);
+        return false;
+      }
+
+      console.log('✅ Driver resubmission requested successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in requestDriverResubmission:', error);
+      return false;
+    }
+  }
+
+  async requestVendorResubmission(registrationId: string, comments?: string): Promise<boolean> {
+    try {
+      console.log('🔄 Requesting vendor registration resubmission:', registrationId);
+
+      const { error } = await supabase
+        .from('vendor_registration_requests')
+        .update({
+          verification_status: 'needs_resubmission',
+          admin_review_comments: comments,
+          status: 'pending'
+        })
+        .eq('id', registrationId);
+
+      if (error) {
+        console.error('❌ Error requesting resubmission:', error);
+        return false;
+      }
+
+      console.log('✅ Vendor resubmission requested successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in requestVendorResubmission:', error);
+      return false;
+    }
+  }
+
+  private async updateDriverVerificationStatus(registrationId: string): Promise<void> {
+    try {
+      // Get all documents for this registration
+      const { data: registration } = await supabase
+        .from('driver_registration_requests')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (!registration) return;
+
+      const documentIds = [
+        registration.national_id_front_doc_id,
+        registration.national_id_back_doc_id,
+        registration.selfie_with_id_doc_id,
+        registration.profile_photo_doc_id,
+        registration.driver_licence_doc_id,
+        registration.vehicle_registration_book_doc_id
+      ].filter(Boolean);
+
+      if (documentIds.length === 0) return;
+
+      const { data: documents } = await supabase
+        .from('documents')
+        .select('*')
+        .in('id', documentIds);
+
+      if (!documents || documents.length === 0) return;
+
+      // Check if all documents are approved
+      const allApproved = documents.every(doc => doc.admin_review_status === 'approved');
+      const anyRejected = documents.some(doc => doc.admin_review_status === 'rejected');
+      const anyNeedsResubmission = documents.some(doc => doc.admin_review_status === 'needs_resubmission');
+
+      let newStatus = 'under_review';
+      if (anyRejected) {
+        newStatus = 'rejected';
+      } else if (anyNeedsResubmission) {
+        newStatus = 'needs_resubmission';
+      } else if (allApproved) {
+        newStatus = 'approved';
+      }
+
+ await supabase
+        .from('driver_registration_requests')
+        .update({ verification_status: newStatus })
+        .eq('id', registrationId);
+    } catch (error) {
+      console.error('❌ Exception in updateDriverVerificationStatus:', error);
+    }
+  }
+
+  private async updateVendorVerificationStatus(registrationId: string): Promise<void> {
+    try {
+      // Get all documents for this registration
+      const { data: registration } = await supabase
+        .from('vendor_registration_requests')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (!registration) return;
+
+      const documentIds = [
+        registration.national_id_doc_id,
+        registration.proof_of_address_doc_id,
+        registration.certificate_of_incorporation_doc_id,
+        registration.shop_front_photo_doc_id,
+        registration.interior_photo_doc_id
+      ].filter(Boolean);
+
+      if (documentIds.length === 0) return;
+
+      const { data: documents } = await supabase
+        .from('documents')
+        .select('*')
+        .in('id', documentIds);
+
+      if (!documents || documents.length === 0) return;
+
+      // Check if all documents are approved
+      const allApproved = documents.every(doc => doc.admin_review_status === 'approved');
+      const anyRejected = documents.some(doc => doc.admin_review_status === 'rejected');
+      const anyNeedsResubmission = documents.some(doc => doc.admin_review_status === 'needs_resubmission');
+
+      let newStatus = 'under_review';
+      if (anyRejected) {
+        newStatus = 'rejected';
+      } else if (anyNeedsResubmission) {
+        newStatus = 'needs_resubmission';
+      } else if (allApproved) {
+        newStatus = 'approved';
+      }
+
+      await supabase
+        .from('vendor_registration_requests')
+        .update({ verification_status: newStatus })
+        .eq('id', registrationId);
+    } catch (error) {
+      console.error('❌ Exception in updateVendorVerificationStatus:', error);
+    }
+  }
 }

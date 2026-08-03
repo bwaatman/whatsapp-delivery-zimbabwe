@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Registration</title>
+    <title>Driver Registration - Svika</title>
     <style>
         * {
             margin: 0;
@@ -25,9 +25,11 @@
             background: white;
             border-radius: 10px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
+            max-width: 700px;
             width: 100%;
             padding: 40px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         h1 {
@@ -55,13 +57,18 @@
             font-size: 14px;
         }
 
-        input, select {
+        textarea, input, select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
             transition: border-color 0.3s;
+            resize: vertical;
+        }
+
+        input[type="file"] {
+            padding: 10px;
         }
 
         input:focus, select:focus {
@@ -134,6 +141,114 @@
 
         .login-link a:hover {
             text-decoration: underline;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 8px;
+            transition: background 0.3s;
+        }
+
+        .step-dot.active {
+            background: #667eea;
+        }
+
+        .step-dot.completed {
+            background: #28a745;
+        }
+
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+        }
+
+        .file-upload.has-file {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .document-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .document-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .progress-bar.active {
+            display: block;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #667eea;
+            border-radius: 3px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .step-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .step-buttons button {
+            width: auto;
+            padding: 12px 30px;
+        }
+
+        .step-buttons .next-btn {
+            margin-left: auto;
         }
     </style>
 </head>
@@ -209,7 +324,143 @@
                 <input type="tel" id="emergencyContactPhone" name="emergencyContactPhone" required placeholder="Enter emergency contact phone">
             </div>
 
-            <button type="submit" id="submitBtn">Register</button>
+            <div class="form-group">
+                <label for="emergencyContactRelationship">Emergency Contact Relationship</label>
+                <select id="emergencyContactRelationship" name="emergencyContactRelationship" required>
+                    <option value="">Select relationship</option>
+                    <option value="spouse">Spouse</option>
+                    <option value="parent">Parent</option>
+                    <option value="sibling">Sibling</option>
+                    <option value="friend">Friend</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="payoutMethod">Payout Method</label>
+                <select id="payoutMethod" name="payoutMethod" required>
+                    <option value="">Select payout method</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="mobile_money">Mobile Money (EcoCash/OneMoney)</option>
+                    <option value="cash">Cash Pickup</option>
+                </select>
+            </div>
+
+            <div class="step-buttons">
+                <button type="button" id="nextBtn1" class="next-btn">Next: Documents</button>
+            </div>
+        </form>
+
+        <form id="documentsForm" class="step">
+            <div class="document-section">
+                <h3>📄 Identity Documents</h3>
+                <div class="form-group">
+                    <label>National ID Front *</label>
+                    <div class="file-upload" id="nationalIdFrontUpload">
+                        <input type="file" id="nationalIdFront" name="nationalIdFront" accept="image/jpeg,image/png,application/pdf" required>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <div class="form-group">
+                    <label>National ID Back *</label>
+                    <div class="file-upload" id="nationalIdBackUpload">
+                        <input type="file" id="nationalIdBack" name="nationalIdBack" accept="image/jpeg,image/png,application/pdf" required>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Selfie with ID *</label>
+                    <div class="file-upload" id="selfieWithIdUpload">
+                        <input type="file" id="selfieWithId" name="selfieWithId" accept="image/jpeg,image/png" required>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Profile Photo *</label>
+                    <div class="file-upload" id="profilePhotoUpload">
+                        <input type="file" id="profilePhoto" name="profilePhoto" accept="image/jpeg,image/png" required>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+            </div>
+
+            <div class="document-section">
+                <h3>🚗 Vehicle Documents</h3>
+                <div class="form-group">
+                    <label>Driver License *</label>
+                    <div class="file-upload" id="driverLicenseUpload">
+                        <input type="file" id="driverLicense" name="driverLicense" accept="image/jpeg,image/png,application/pdf" required>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Vehicle Registration Book *</label>
+                    <div class="file-upload" id="vehicleRegistrationBookUpload">
+                        <input type="file" id="vehicleRegistrationBook" name="vehicleRegistrationBook" accept="image/jpeg,image/png,application/pdf" required>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Vehicle Photo *</label>
+                    <div class="file-upload" id="vehiclePhotoUpload">
+                        <input type="file" id="vehiclePhoto" name="vehiclePhoto" accept="image/jpeg,image/png" required>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Insurance Document</label>
+                    <div class="file-upload" id="insuranceUpload">
+                        <input type="file" id="insurance" name="insurance" accept="image/jpeg,image/png,application/pdf">
+                        <p>Click to upload or drag and drop (optional)</p>
+                        <p class="file-preview"></p>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <div class="form-group" id="bicycleFields" style="display: none;">
+                    <label>Bicycle Brand</label>
+                    <input type="text" id="bicycleBrand" name="bicycleBrand" placeholder="Enter bicycle brand">
+                </div>
+
+                <div class="form-group" id="frameNumberField" style="display: none;">
+                    <label>Frame Number</label>
+                    <input type="text" id="frameNumber" name="frameNumber" placeholder="Enter frame number">
+                </div>
+            </div>
+
+            <div class="step-buttons">
+                <button type="button" id="prevBtn2">Previous</button>
+                <button type="button" id="nextBtn2" class="next-btn">Next: Review</button>
+            </div>
+        </form>
+
+        <form id="reviewForm" class="step">
+            <h2>Review Your Information</h2>
+            <div id="reviewContent"></div>
+            <div class="step-buttons">
+                <button type="button" id="prevBtn3">Previous</button>
+                <button type="submit" id="submitBtn">Submit Registration</button>
+            </div>
         </form>
 
         <div id="message" class="message"></div>
@@ -221,8 +472,219 @@
 
     <script>
         const API_BASE = '/api';
-        
-        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+        let currentStep = 1;
+        const totalSteps = 3;
+        let uploadedDocuments = {};
+
+        // Step navigation
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach((el, index) => {
+                el.classList.toggle('active', index + 1 === step);
+            });
+            
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    dot.classList.add('completed');
+                } else if (index + 1 === step) {
+                    dot.classList.add('active');
+                }
+            });
+            
+            currentStep = step;
+            
+            if (step === 3) {
+                populateReview();
+            }
+        }
+
+        // File upload handling
+        function setupFileUpload(uploadId, inputId, documentType) {
+            const uploadEl = document.getElementById(uploadId);
+            const inputEl = document.getElementById(inputId);
+            const progressBar = uploadEl.querySelector('.progress-bar');
+            const progressFill = uploadEl.querySelector('.progress-bar-fill');
+            const preview = uploadEl.querySelector('.file-preview');
+
+            uploadEl.addEventListener('click', () => inputEl.click());
+            
+            uploadEl.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadEl.style.borderColor = '#667eea';
+            });
+            
+            uploadEl.addEventListener('dragleave', () => {
+                uploadEl.style.borderColor = '#ddd';
+            });
+            
+            uploadEl.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadEl.style.borderColor = '#ddd';
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    inputEl.files = e.dataTransfer.files;
+                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview);
+                }
+            });
+            
+            inputEl.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview);
+                }
+            });
+        }
+
+        async function handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview) {
+            // Validate file
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            if (!allowedTypes.includes(file.type)) {
+                alert('Invalid file type. Please upload JPEG, PNG, or PDF files only.');
+                return;
+            }
+            
+            if (file.size > maxSize) {
+                alert('File size exceeds 10MB limit.');
+                return;
+            }
+
+            // Upload file
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('entityType', 'driver');
+            formData.append('entityId', 'temp-' + Date.now()); // Temporary ID
+            formData.append('documentType', documentType);
+
+            progressBar.classList.add('active');
+            progressFill.style.width = '50%';
+            preview.textContent = 'Uploading...';
+
+            try {
+                const response = await fetch(`${API_BASE}/documents/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    uploadedDocuments[documentType] = data.document_id;
+                    uploadEl.classList.add('has-file');
+                    preview.textContent = `Uploaded: ${file.name}`;
+                    progressFill.style.width = '100%';
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                preview.textContent = 'Upload failed: ' + error.message;
+                progressFill.style.background = '#dc3545';
+            }
+        }
+
+        // Vehicle type handling
+        document.getElementById('vehicleType').addEventListener('change', (e) => {
+            const vehicleType = e.target.value;
+            const bicycleFields = document.getElementById('bicycleFields');
+            const frameNumberField = document.getElementById('frameNumberField');
+            
+            if (vehicleType === 'bicycle') {
+                bicycleFields.style.display = 'block';
+                frameNumberField.style.display = 'block';
+            } else {
+                bicycleFields.style.display = 'none';
+                frameNumberField.style.display = 'none';
+            }
+        });
+
+        // Step navigation buttons
+        document.getElementById('nextBtn1').addEventListener('click', () => {
+            if (validateStep1()) {
+                showStep(2);
+            }
+        });
+
+        document.getElementById('prevBtn2').addEventListener('click', () => showStep(1));
+        document.getElementById('nextBtn2').addEventListener('click', () => {
+            if (validateStep2()) {
+                showStep(3);
+            }
+        });
+
+        document.getElementById('prevBtn3').addEventListener('click', () => showStep(2));
+
+        function validateStep1() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const messageDiv = document.getElementById('message');
+            
+            if (password !== confirmPassword) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Passwords do not match';
+                messageDiv.style.display = 'block';
+                return false;
+            }
+
+            if (password.length < 6) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Password must be at least 6 characters';
+                messageDiv.style.display = 'block';
+                return false;
+            }
+            
+            return true;
+        }
+
+        function validateStep2() {
+            const requiredDocs = ['nationalIdFront', 'nationalIdBack', 'selfieWithId', 'profilePhoto', 'driverLicense', 'vehicleRegistrationBook', 'vehiclePhoto'];
+            const messageDiv = document.getElementById('message');
+            
+            for (const doc of requiredDocs) {
+                if (!uploadedDocuments[doc]) {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = 'Please upload all required documents';
+                    messageDiv.style.display = 'block';
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function populateReview() {
+            const reviewContent = document.getElementById('reviewContent');
+            const formData = {
+                full_name: document.getElementById('fullName').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                driver_license_number: document.getElementById('driverLicenseNumber').value,
+                vehicle_type: document.getElementById('vehicleType').value,
+                vehicle_registration: document.getElementById('vehicleRegistration').value,
+                vehicle_color: document.getElementById('vehicleColor').value,
+                home_address: document.getElementById('homeAddress').value,
+                emergency_contact_name: document.getElementById('emergencyContactName').value,
+                emergency_contact_phone: document.getElementById('emergencyContactPhone').value,
+                emergency_contact_relationship: document.getElementById('emergencyContactRelationship').value,
+                payout_method: document.getElementById('payoutMethod').value
+            };
+
+            let html = '<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">';
+            html += '<h3>Personal Information</h3>';
+            for (const [key, value] of Object.entries(formData)) {
+                if (value) {
+                    html += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
+                }
+            }
+            html += '<h3>Uploaded Documents</h3>';
+            html += '<p>Identity documents: ' + Object.keys(uploadedDocuments).length + ' files uploaded</p>';
+            html += '</div>';
+            
+            reviewContent.innerHTML = html;
+        }
+
+        // Form submission
+        document.getElementById('reviewForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const submitBtn = document.getElementById('submitBtn');
@@ -239,30 +701,21 @@
                 vehicle_color: document.getElementById('vehicleColor').value,
                 home_address: document.getElementById('homeAddress').value,
                 emergency_contact_name: document.getElementById('emergencyContactName').value,
-                emergency_contact_phone: document.getElementById('emergencyContactPhone').value
+                emergency_contact_phone: document.getElementById('emergencyContactPhone').value,
+                emergency_contact_relationship: document.getElementById('emergencyContactRelationship').value,
+                payout_method: document.getElementById('payoutMethod').value,
+                bicycle_brand: document.getElementById('bicycleBrand').value,
+                frame_number: document.getElementById('frameNumber').value,
+                // Document IDs
+                national_id_front_doc_id: uploadedDocuments.nationalIdFront,
+                national_id_back_doc_id: uploadedDocuments.nationalIdBack,
+                selfie_with_id_doc_id: uploadedDocuments.selfieWithId,
+                profile_photo_doc_id: uploadedDocuments.profilePhoto,
+                driver_licence_doc_id: uploadedDocuments.driverLicense,
+                vehicle_registration_book_doc_id: uploadedDocuments.vehicleRegistrationBook,
+                vehicle_photo_doc_id: uploadedDocuments.vehiclePhoto,
+                insurance_doc_id: uploadedDocuments.insurance
             };
-
-            // Validate password
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirmPassword) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = 'Passwords do not match';
-                messageDiv.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Register';
-                return;
-            }
-
-            if (password.length < 6) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = 'Password must be at least 6 characters';
-                messageDiv.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Register';
-                return;
-            }
             
             submitBtn.disabled = true;
             submitBtn.textContent = 'Submitting...';
@@ -284,6 +737,9 @@
                     messageDiv.textContent = 'Registration submitted successfully! Your application is pending approval.';
                     messageDiv.style.display = 'block';
                     document.getElementById('registrationForm').reset();
+                    document.getElementById('documentsForm').reset();
+                    uploadedDocuments = {};
+                    showStep(1);
                 } else {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = data.error || 'Registration failed. Please try again.';
@@ -295,8 +751,35 @@
                 messageDiv.style.display = 'block';
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Register';
+                submitBtn.textContent = 'Submit Registration';
             }
+        });
+
+        // Initialize file uploads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add step indicator
+            const container = document.querySelector('.container');
+            const stepIndicator = document.createElement('div');
+            stepIndicator.className = 'step-indicator';
+            for (let i = 1; i <= totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'step-dot' + (i === 1 ? ' active' : '');
+                stepIndicator.appendChild(dot);
+            }
+            container.insertBefore(stepIndicator, document.getElementById('registrationForm'));
+
+            // Setup file uploads
+            setupFileUpload('nationalIdFrontUpload', 'nationalIdFront', 'national_id_front');
+            setupFileUpload('nationalIdBackUpload', 'nationalIdBack', 'national_id_back');
+            setupFileUpload('selfieWithIdUpload', 'selfieWithId', 'selfie_with_id');
+            setupFileUpload('profilePhotoUpload', 'profilePhoto', 'profile_photo');
+            setupFileUpload('driverLicenseUpload', 'driverLicense', 'driver_licence');
+            setupFileUpload('vehicleRegistrationBookUpload', 'vehicleRegistrationBook', 'vehicle_registration_book');
+            setupFileUpload('vehiclePhotoUpload', 'vehiclePhoto', 'vehicle_photo');
+            setupFileUpload('insuranceUpload', 'insurance', 'insurance');
+
+            // Show first step
+            showStep(1);
         });
     </script>
 </body>

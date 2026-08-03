@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DriverService } from './DriverService';
 import { DriverSettlementService } from './DriverSettlementService';
+import { supabase } from './database';
 
 const router = Router();
 const driverService = new DriverService();
@@ -338,6 +339,75 @@ router.post('/drivers/register', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error submitting driver registration:', error);
     res.status(500).json({ error: 'Failed to submit driver registration' });
+  }
+});
+
+// Get driver registration with documents
+router.get('/driver-registrations/:id', async (req: Request, res: Response) => {
+  try {
+    const { data: registration, error } = await supabase
+      .from('driver_registration_requests')
+      .select('*')
+      .eq('id', getParam(req.params.id))
+      .single();
+
+    if (error || !registration) {
+      return res.status(404).json({ error: 'Driver registration not found' });
+    }
+
+    // Get documents for this registration
+    const documentIds = [
+      registration.national_id_front_doc_id,
+      registration.national_id_back_doc_id,
+      registration.selfie_with_id_doc_id,
+      registration.profile_photo_doc_id,
+      registration.driver_licence_doc_id,
+      registration.vehicle_registration_book_doc_id,
+      registration.bicycle_photo_doc_id,
+      registration.motorcycle_photo_doc_id,
+      registration.vehicle_photo_doc_id,
+      registration.insurance_doc_id
+    ].filter(Boolean);
+
+    let documents = [];
+    if (documentIds.length > 0) {
+      const { data: docs } = await supabase
+        .from('documents')
+        .select('*')
+        .in('id', documentIds);
+      documents = docs || [];
+    }
+
+    res.json({ registration, documents });
+  } catch (error) {
+    console.error('Error getting driver registration:', error);
+    res.status(500).json({ error: 'Failed to get driver registration' });
+  }
+});
+
+// Resubmit driver registration with new documents
+router.put('/driver-registrations/:id/resubmit', async (req: Request, res: Response) => {
+  try {
+    const registrationData = req.body;
+    const { error } = await supabase
+      .from('driver_registration_requests')
+      .update({
+        ...registrationData,
+        verification_status: 'submitted',
+        status: 'pending',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', getParam(req.params.id));
+
+    if (error) {
+      console.error('Error resubmitting driver registration:', error);
+      return res.status(400).json({ error: 'Failed to resubmit driver registration' });
+    }
+
+    res.json({ success: true, message: 'Driver registration resubmitted successfully' });
+  } catch (error) {
+    console.error('Error resubmitting driver registration:', error);
+    res.status(500).json({ error: 'Failed to resubmit driver registration' });
   }
 });
 

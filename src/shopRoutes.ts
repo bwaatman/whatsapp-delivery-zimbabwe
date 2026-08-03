@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ShopService } from './ShopService';
+import { supabase } from './database';
 
 const router = Router();
 const shopService = new ShopService();
@@ -264,6 +265,77 @@ router.post('/shops/register', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error submitting vendor registration:', error);
     res.status(500).json({ error: 'Failed to submit vendor registration' });
+  }
+});
+
+// Get vendor registration with documents
+router.get('/vendor-registrations/:id', async (req: Request, res: Response) => {
+  try {
+    const { data: registration, error } = await supabase
+      .from('vendor_registration_requests')
+      .select('*')
+      .eq('id', getParam(req.params.id))
+      .single();
+
+    if (error || !registration) {
+      return res.status(404).json({ error: 'Vendor registration not found' });
+    }
+
+    // Get documents for this registration
+    const documentIds = [
+      registration.national_id_doc_id,
+      registration.proof_of_address_doc_id,
+      registration.certificate_of_incorporation_doc_id,
+      registration.shop_front_photo_doc_id,
+      registration.interior_photo_doc_id,
+      registration.kitchen_photo_doc_id,
+      registration.storage_photo_doc_id,
+      registration.health_certificate_doc_id,
+      registration.food_handling_permit_doc_id,
+      registration.restaurant_licence_doc_id,
+      registration.business_licence_doc_id,
+      registration.trading_licence_doc_id
+    ].filter(Boolean);
+
+    let documents = [];
+    if (documentIds.length > 0) {
+      const { data: docs } = await supabase
+        .from('documents')
+        .select('*')
+        .in('id', documentIds);
+      documents = docs || [];
+    }
+
+    res.json({ registration, documents });
+  } catch (error) {
+    console.error('Error getting vendor registration:', error);
+    res.status(500).json({ error: 'Failed to get vendor registration' });
+  }
+});
+
+// Resubmit vendor registration with new documents
+router.put('/vendor-registrations/:id/resubmit', async (req: Request, res: Response) => {
+  try {
+    const registrationData = req.body;
+    const { error } = await supabase
+      .from('vendor_registration_requests')
+      .update({
+        ...registrationData,
+        verification_status: 'submitted',
+        status: 'pending',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', getParam(req.params.id));
+
+    if (error) {
+      console.error('Error resubmitting vendor registration:', error);
+      return res.status(400).json({ error: 'Failed to resubmit vendor registration' });
+    }
+
+    res.json({ success: true, message: 'Vendor registration resubmitted successfully' });
+  } catch (error) {
+    console.error('Error resubmitting vendor registration:', error);
+    res.status(500).json({ error: 'Failed to resubmit vendor registration' });
   }
 });
 

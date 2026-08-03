@@ -184,6 +184,129 @@ router.post('/admin/driver-registrations/:id/reject', authenticateAdmin, async (
   }
 });
 
+// Document review endpoints (protected)
+router.put('/admin/driver-registrations/:id/documents/:docId/review', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { reviewStatus, adminComments } = req.body;
+    const success = await adminService.updateDriverDocumentReviewStatus(
+      getParam(req.params.id),
+      getParam(req.params.docId),
+      reviewStatus,
+      adminComments
+    );
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to update document review status' });
+    }
+    res.json({ success: true, message: 'Document review status updated successfully' });
+  } catch (error) {
+    console.error('Error updating document review status:', error);
+    res.status(500).json({ error: 'Failed to update document review status' });
+  }
+});
+
+router.put('/admin/vendor-registrations/:id/documents/:docId/review', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { reviewStatus, adminComments } = req.body;
+    const success = await adminService.updateVendorDocumentReviewStatus(
+      getParam(req.params.id),
+      getParam(req.params.docId),
+      reviewStatus,
+      adminComments
+    );
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to update document review status' });
+    }
+    res.json({ success: true, message: 'Document review status updated successfully' });
+  } catch (error) {
+    console.error('Error updating document review status:', error);
+    res.status(500).json({ error: 'Failed to update document review status' });
+  }
+});
+
+router.put('/admin/driver-registrations/:id/approve-with-documents', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { adminId } = req.body;
+    const success = await adminService.approveDriverWithDocuments(getParam(req.params.id), adminId);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to approve registration' });
+    }
+    res.json({ success: true, message: 'Driver registration approved successfully' });
+  } catch (error) {
+    console.error('Error approving driver registration:', error);
+    res.status(500).json({ error: 'Failed to approve registration' });
+  }
+});
+
+router.put('/admin/vendor-registrations/:id/approve-with-documents', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { adminId } = req.body;
+    const success = await adminService.approveVendorWithDocuments(getParam(req.params.id), adminId);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to approve registration' });
+    }
+    res.json({ success: true, message: 'Vendor registration approved successfully' });
+  } catch (error) {
+    console.error('Error approving vendor registration:', error);
+    res.status(500).json({ error: 'Failed to approve registration' });
+  }
+});
+
+router.put('/admin/driver-registrations/:id/reject-with-comments', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { adminId, comments } = req.body;
+    const success = await adminService.rejectDriverWithComments(getParam(req.params.id), adminId, comments);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to reject registration' });
+    }
+    res.json({ success: true, message: 'Driver registration rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting driver registration:', error);
+    res.status(500).json({ error: 'Failed to reject registration' });
+  }
+});
+
+router.put('/admin/vendor-registrations/:id/reject-with-comments', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { adminId, comments } = req.body;
+    const success = await adminService.rejectVendorWithComments(getParam(req.params.id), adminId, comments);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to reject registration' });
+    }
+    res.json({ success: true, message: 'Vendor registration rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting vendor registration:', error);
+    res.status(500).json({ error: 'Failed to reject registration' });
+  }
+});
+
+router.put('/admin/driver-registrations/:id/request-resubmission', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { comments } = req.body;
+    const success = await adminService.requestDriverResubmission(getParam(req.params.id), comments);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to request resubmission' });
+    }
+    res.json({ success: true, message: 'Driver resubmission requested successfully' });
+  } catch (error) {
+    console.error('Error requesting driver resubmission:', error);
+    res.status(500).json({ error: 'Failed to request resubmission' });
+  }
+});
+
+router.put('/admin/vendor-registrations/:id/request-resubmission', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { comments } = req.body;
+    const success = await adminService.requestVendorResubmission(getParam(req.params.id), comments);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to request resubmission' });
+    }
+    res.json({ success: true, message: 'Vendor resubmission requested successfully' });
+  } catch (error) {
+    console.error('Error requesting vendor resubmission:', error);
+    res.status(500).json({ error: 'Failed to request resubmission' });
+  }
+});
+
 // Vendor management (protected)
 router.get('/admin/vendors', authenticateAdmin, async (req: Request, res: Response) => {
   try {
