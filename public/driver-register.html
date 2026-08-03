@@ -345,13 +345,9 @@
                     <option value="cash">Cash Pickup</option>
                 </select>
             </div>
-
-            <div class="step-buttons">
-                <button type="button" id="nextBtn1" class="next-btn">Next: Documents</button>
-            </div>
         </form>
 
-        <form id="documentsForm" class="step">
+        <form id="documentsForm">
             <div class="document-section">
                 <h3>📄 Identity Documents</h3>
                 <div class="form-group">
@@ -449,16 +445,6 @@
             </div>
 
             <div class="step-buttons">
-                <button type="button" id="prevBtn2">Previous</button>
-                <button type="button" id="nextBtn2" class="next-btn">Next: Review</button>
-            </div>
-        </form>
-
-        <form id="reviewForm" class="step">
-            <h2>Review Your Information</h2>
-            <div id="reviewContent"></div>
-            <div class="step-buttons">
-                <button type="button" id="prevBtn3">Previous</button>
                 <button type="submit" id="submitBtn">Submit Registration</button>
             </div>
         </form>
@@ -472,8 +458,6 @@
 
     <script>
         const API_BASE = '/api';
-        let currentStep = 1;
-        const totalSteps = 3;
         let uploadedDocuments = {};
 
         // Generate a simple UUID v4
@@ -487,28 +471,6 @@
 
         // Generate a temporary entity ID for document uploads
         const tempEntityId = generateUUID();
-
-        // Step navigation
-        function showStep(step) {
-            document.querySelectorAll('.step').forEach((el, index) => {
-                el.classList.toggle('active', index + 1 === step);
-            });
-            
-            document.querySelectorAll('.step-dot').forEach((dot, index) => {
-                dot.classList.remove('active', 'completed');
-                if (index + 1 < step) {
-                    dot.classList.add('completed');
-                } else if (index + 1 === step) {
-                    dot.classList.add('active');
-                }
-            });
-            
-            currentStep = step;
-            
-            if (step === 3) {
-                populateReview();
-            }
-        }
 
         // File upload handling
         function setupFileUpload(uploadId, inputId, documentType) {
@@ -623,105 +585,48 @@
             }
         });
 
-        // Step navigation buttons
-        document.getElementById('nextBtn1').addEventListener('click', () => {
-            if (validateStep1()) {
-                showStep(2);
-            }
-        });
-
-        document.getElementById('prevBtn2').addEventListener('click', () => showStep(1));
-        document.getElementById('nextBtn2').addEventListener('click', () => {
-            if (validateStep2()) {
-                showStep(3);
-            }
-        });
-
-        document.getElementById('prevBtn3').addEventListener('click', () => showStep(2));
-
-        function validateStep1() {
+        // Form submission
+        document.getElementById('documentsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('message');
+            
+            // Validate password
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            const messageDiv = document.getElementById('message');
             
             if (password !== confirmPassword) {
                 messageDiv.className = 'message error';
                 messageDiv.textContent = 'Passwords do not match';
                 messageDiv.style.display = 'block';
-                return false;
+                return;
             }
-
+            
             if (password.length < 6) {
                 messageDiv.className = 'message error';
                 messageDiv.textContent = 'Password must be at least 6 characters';
                 messageDiv.style.display = 'block';
-                return false;
+                return;
             }
-            
-            return true;
-        }
 
-        function validateStep2() {
+            // Validate documents
             const vehicleType = document.getElementById('vehicleType').value;
             const requiredDocs = ['national_id_front', 'national_id_back', 'selfie_with_id', 'profile_photo', 'vehicle_photo'];
             
-            // Add driver license and vehicle registration book for non-bicycle vehicles
             if (vehicleType !== 'bicycle') {
                 requiredDocs.push('driver_licence', 'vehicle_registration_book');
             }
-            
-            const messageDiv = document.getElementById('message');
             
             for (const doc of requiredDocs) {
                 if (!uploadedDocuments[doc]) {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = 'Please upload all required documents';
                     messageDiv.style.display = 'block';
-                    return false;
+                    return;
                 }
             }
-            
-            return true;
-        }
 
-        function populateReview() {
-            const reviewContent = document.getElementById('reviewContent');
-            const formData = {
-                full_name: document.getElementById('fullName').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
-                driver_license_number: document.getElementById('driverLicenseNumber').value,
-                vehicle_type: document.getElementById('vehicleType').value,
-                vehicle_registration: document.getElementById('vehicleRegistration').value,
-                vehicle_color: document.getElementById('vehicleColor').value,
-                home_address: document.getElementById('homeAddress').value,
-                emergency_contact_name: document.getElementById('emergencyContactName').value,
-                emergency_contact_phone: document.getElementById('emergencyContactPhone').value,
-                emergency_contact_relationship: document.getElementById('emergencyContactRelationship').value,
-                payout_method: document.getElementById('payoutMethod').value
-            };
-
-            let html = '<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">';
-            html += '<h3>Personal Information</h3>';
-            for (const [key, value] of Object.entries(formData)) {
-                if (value) {
-                    html += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
-                }
-            }
-            html += '<h3>Uploaded Documents</h3>';
-            html += '<p>Identity documents: ' + Object.keys(uploadedDocuments).length + ' files uploaded</p>';
-            html += '</div>';
-            
-            reviewContent.innerHTML = html;
-        }
-
-        // Form submission
-        document.getElementById('reviewForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const messageDiv = document.getElementById('message');
-            
             const formData = {
                 full_name: document.getElementById('fullName').value,
                 phone: document.getElementById('phone').value,
@@ -739,13 +644,13 @@
                 bicycle_brand: document.getElementById('bicycleBrand').value,
                 frame_number: document.getElementById('frameNumber').value,
                 // Document IDs
-                national_id_front_doc_id: uploadedDocuments.nationalIdFront,
-                national_id_back_doc_id: uploadedDocuments.nationalIdBack,
-                selfie_with_id_doc_id: uploadedDocuments.selfieWithId,
-                profile_photo_doc_id: uploadedDocuments.profilePhoto,
-                driver_licence_doc_id: uploadedDocuments.driverLicense,
-                vehicle_registration_book_doc_id: uploadedDocuments.vehicleRegistrationBook,
-                vehicle_photo_doc_id: uploadedDocuments.vehiclePhoto,
+                national_id_front_doc_id: uploadedDocuments.national_id_front,
+                national_id_back_doc_id: uploadedDocuments.national_id_back,
+                selfie_with_id_doc_id: uploadedDocuments.selfie_with_id,
+                profile_photo_doc_id: uploadedDocuments.profile_photo,
+                driver_licence_doc_id: uploadedDocuments.driver_licence,
+                vehicle_registration_book_doc_id: uploadedDocuments.vehicle_registration_book,
+                vehicle_photo_doc_id: uploadedDocuments.vehicle_photo,
                 insurance_doc_id: uploadedDocuments.insurance
             };
             
@@ -771,7 +676,6 @@
                     document.getElementById('registrationForm').reset();
                     document.getElementById('documentsForm').reset();
                     uploadedDocuments = {};
-                    showStep(1);
                 } else {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = data.error || 'Registration failed. Please try again.';
@@ -789,18 +693,6 @@
 
         // Initialize file uploads
         document.addEventListener('DOMContentLoaded', () => {
-            // Add step indicator
-            const container = document.querySelector('.container');
-            const stepIndicator = document.createElement('div');
-            stepIndicator.className = 'step-indicator';
-            for (let i = 1; i <= totalSteps; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'step-dot' + (i === 1 ? ' active' : '');
-                stepIndicator.appendChild(dot);
-            }
-            container.insertBefore(stepIndicator, document.getElementById('registrationForm'));
-
-            // Setup file uploads
             setupFileUpload('nationalIdFrontUpload', 'nationalIdFront', 'national_id_front');
             setupFileUpload('nationalIdBackUpload', 'nationalIdBack', 'national_id_back');
             setupFileUpload('selfieWithIdUpload', 'selfieWithId', 'selfie_with_id');
@@ -809,9 +701,6 @@
             setupFileUpload('vehicleRegistrationBookUpload', 'vehicleRegistrationBook', 'vehicle_registration_book');
             setupFileUpload('vehiclePhotoUpload', 'vehiclePhoto', 'vehicle_photo');
             setupFileUpload('insuranceUpload', 'insurance', 'insurance');
-
-            // Show first step
-            showStep(1);
         });
     </script>
 </body>

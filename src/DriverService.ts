@@ -737,15 +737,54 @@ export class DriverService {
     try {
       console.log('📝 Submitting driver registration...');
 
-      // First create the driver
-      const driver = await this.createDriver(
-        registrationData.full_name,
-        registrationData.phone
-      );
+      // Check if driver with this phone already exists
+      const { data: existingDriver, error: checkError } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('phone', registrationData.phone)
+        .maybeSingle();
 
-      if (!driver) {
-        console.error('❌ Failed to create driver during registration');
-        return null;
+      let driver;
+
+      if (existingDriver) {
+        // Driver exists - check if they can reapply
+        if (existingDriver.registration_status === 'rejected') {
+          console.log('🔄 Driver was rejected, allowing reapplication');
+          // Update existing driver record for reapplication
+          const { data: updatedDriver, error: updateError } = await supabase
+            .from('drivers')
+            .update({
+              name: registrationData.full_name,
+              registration_status: 'pending',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingDriver.id)
+            .select()
+            .single();
+
+          if (updateError) {
+            console.error('❌ Error updating driver for reapplication:', updateError);
+            return null;
+          }
+          driver = updatedDriver;
+        } else if (existingDriver.registration_status === 'approved') {
+          console.error('❌ Driver already approved, cannot reapply');
+          return { error: 'Driver with this phone number is already approved' };
+        } else {
+          console.error('❌ Driver registration already pending');
+          return { error: 'Driver with this phone number already has a pending registration' };
+        }
+      } else {
+        // Create new driver
+        driver = await this.createDriver(
+          registrationData.full_name,
+          registrationData.phone
+        );
+
+        if (!driver) {
+          console.error('❌ Failed to create driver during registration');
+          return null;
+        }
       }
 
       // Then create the registration request with document references
