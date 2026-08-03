@@ -590,19 +590,19 @@
                 const file = e.dataTransfer.files[0];
                 if (file) {
                     inputEl.files = e.dataTransfer.files;
-                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview);
+                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl);
                 }
             });
-            
+
             inputEl.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview);
+                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl);
                 }
             });
         }
 
-        async function handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview) {
+        async function handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl) {
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
             const maxSize = 10 * 1024 * 1024;
             
