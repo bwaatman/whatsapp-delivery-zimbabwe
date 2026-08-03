@@ -823,25 +823,47 @@
             }
         }
 
-        function renderDocuments(documents) {
+        async function renderDocuments(documents) {
             currentDocuments = documents;
             const grid = document.getElementById('documentGrid');
-            
+
             if (!documents || documents.length === 0) {
                 grid.innerHTML = '<p>No documents uploaded</p>';
                 return;
             }
-            
+
             let html = '';
-            documents.forEach(doc => {
+            for (const doc of documents) {
                 const statusClass = doc.review_status ? `status-${doc.review_status}-doc` : 'status-pending-doc';
                 const statusText = doc.review_status ? doc.review_status.charAt(0).toUpperCase() + doc.review_status.slice(1) : 'Pending';
-                
+
+                // Get signed URL for document viewing
+                let viewUrl = '';
+                let isImage = false;
+                if (doc.mime_type && doc.mime_type.startsWith('image/')) {
+                    isImage = true;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE}/documents/${doc.id}/signed-url`, {
+                        headers: getAuthHeaders()
+                    });
+                    const data = await response.json();
+                    if (data.signed_url) {
+                        viewUrl = data.signed_url;
+                    }
+                } catch (error) {
+                    console.error('Error getting signed URL:', error);
+                }
+
                 html += `
                     <div class="document-item">
                         <h4>${doc.document_type.replace(/_/g, ' ')}</h4>
                         <span class="document-status ${statusClass}">${statusText}</span>
-                        ${doc.file_path ? `<img src="${doc.file_path}" class="document-preview" alt="Document preview" onerror="this.style.display='none'">` : '<div class="document-preview" style="display:flex;align-items:center;justify-content:center;color:#999;">No preview</div>'}
+                        ${viewUrl ? `
+                            ${isImage ? `<img src="${viewUrl}" class="document-preview" alt="Document preview" onerror="this.style.display='none'">` : ''}
+                            <a href="${viewUrl}" target="_blank" class="btn btn-view" style="display:inline-block;margin-top:10px;text-decoration:none;padding:8px 16px;background:#667eea;color:white;border-radius:5px;font-size:14px;">View/Download Document</a>
+                        ` : '<div class="document-preview" style="display:flex;align-items:center;justify-content:center;color:#999;">No preview available</div>'}
                         ${doc.admin_comments ? `<p style="font-size:12px;color:#666;margin-top:5px;"><strong>Comments:</strong> ${doc.admin_comments}</p>` : ''}
                         <div class="document-actions">
                             <button class="btn btn-approve" onclick="reviewDocument('${doc.id}', 'approved')">Approve</button>
@@ -849,8 +871,8 @@
                         </div>
                     </div>
                 `;
-            });
-            
+            }
+
             grid.innerHTML = html;
         }
 
