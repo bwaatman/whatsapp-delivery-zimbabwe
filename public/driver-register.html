@@ -562,9 +562,9 @@
                 return;
             }
 
-            // Check all required files are selected
+            // Check all required files are selected (insurance is optional)
             const vehicleType = document.getElementById('vehicleType').value;
-            const requiredFileInputs = ['nationalIdFront', 'nationalIdBack', 'selfieWithId', 'profilePhoto', 'vehiclePhoto', 'insurance'];
+            const requiredFileInputs = ['nationalIdFront', 'nationalIdBack', 'selfieWithId', 'profilePhoto', 'vehiclePhoto'];
 
             if (vehicleType !== 'bicycle') {
                 requiredFileInputs.push('driverLicense', 'vehicleRegistrationBook');
