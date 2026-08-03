@@ -564,7 +564,7 @@
 
             // Check all required files are selected
             const vehicleType = document.getElementById('vehicleType').value;
-            const requiredFileInputs = ['nationalIdFront', 'nationalIdBack', 'selfieWithId', 'profilePhoto', 'vehiclePhoto'];
+            const requiredFileInputs = ['nationalIdFront', 'nationalIdBack', 'selfieWithId', 'profilePhoto', 'vehiclePhoto', 'insurance'];
 
             if (vehicleType !== 'bicycle') {
                 requiredFileInputs.push('driverLicense', 'vehicleRegistrationBook');
@@ -631,7 +631,8 @@
                     { inputId: 'nationalIdBack', type: 'national_id_back' },
                     { inputId: 'selfieWithId', type: 'selfie_with_id' },
                     { inputId: 'profilePhoto', type: 'profile_photo' },
-                    { inputId: 'vehiclePhoto', type: 'vehicle_photo' }
+                    { inputId: 'vehiclePhoto', type: 'vehicle_photo' },
+                    { inputId: 'insurance', type: 'insurance' }
                 ];
 
                 if (vehicleType !== 'bicycle') {
@@ -681,7 +682,8 @@
                         profile_photo_doc_id: uploadedDocuments.profile_photo,
                         driver_licence_doc_id: uploadedDocuments.driver_licence,
                         vehicle_registration_book_doc_id: uploadedDocuments.vehicle_registration_book,
-                        vehicle_photo_doc_id: uploadedDocuments.vehicle_photo
+                        vehicle_photo_doc_id: uploadedDocuments.vehicle_photo,
+                        insurance_doc_id: uploadedDocuments.insurance
                     })
                 });
 
