@@ -531,6 +531,18 @@
         let uploadedDocuments = {};
         let selectedRegistrationType = '';
 
+        // Generate a simple UUID v4
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Generate a temporary entity ID for document uploads
+        const tempEntityId = generateUUID();
+
         // Step navigation
         function showStep(step) {
             document.querySelectorAll('.step').forEach((el, index) => {
@@ -607,7 +619,7 @@
             const formData = new FormData();
             formData.append('file', file);
             formData.append('entityType', 'vendor');
-            formData.append('entityId', 'temp-' + Date.now());
+            formData.append('entityId', tempEntityId);
             formData.append('documentType', documentType);
 
             progressBar.classList.add('active');
