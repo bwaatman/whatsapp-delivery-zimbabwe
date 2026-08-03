@@ -637,6 +637,7 @@
                 if (data.success) {
                     uploadedDocuments[documentType] = data.document_id;
                     uploadEl.classList.add('has-file');
+                    inputEl.removeAttribute('required'); // Remove required after successful upload
                     preview.textContent = `Uploaded: ${file.name}`;
                     progressFill.style.width = '100%';
                 } else {
