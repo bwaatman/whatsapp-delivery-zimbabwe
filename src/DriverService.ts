@@ -736,6 +736,7 @@ export class DriverService {
   async submitDriverRegistration(registrationData: any): Promise<any> {
     try {
       console.log('📝 Submitting driver registration...');
+      console.log('📝 Registration data received:', JSON.stringify(registrationData, null, 2));
 
       // Check if driver with this phone already exists
       const { data: existingDriver, error: checkError } = await supabase
