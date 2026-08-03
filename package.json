@@ -28,6 +28,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "multer": "^1.4.5-lts.1",
     "nodemon": "^3.1.14",
     "pg": "^8.21.0",
     "qrcode": "^1.5.4",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/multer": "^1.4.12",
     "@types/qrcode": "^1.5.6",
     "@types/qrcode-terminal": "^0.12.2"
   }
