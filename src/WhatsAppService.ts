@@ -85,7 +85,7 @@ export class WhatsAppService {
   }
 
   async sendLocationRequest(to: string): Promise<boolean> {
-    const message = "Welcome to ZimDelivery! 🇿🇼 Please reply to this chat by sharing your Location Pin so our drivers can find you.";
+    const message = "Welcome to Svika! 🇿🇼 Please reply to this chat by sharing your Location Pin so our drivers can find you.";
     return await this.sendTextMessage(to, message);
   }
 

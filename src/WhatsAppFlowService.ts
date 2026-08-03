@@ -176,7 +176,7 @@ export class WhatsAppFlowService {
       console.log(`✅ New order created: ${newOrder.id}`);
 
       // Send welcome message with order instructions
-      const welcomeMessage = "Welcome to ZimDelivery! 🇿🇼 What are we delivering today? Please reply with your order details, followed by your WhatsApp Location Pin so our rider can find you.";
+      const welcomeMessage = "Welcome to Svika! 🇿🇼 What are we delivering today? Please reply with your order details, followed by your WhatsApp Location Pin so our rider can find you.";
       
       const messageSent = await this.whatsappService.sendTextMessage(from, welcomeMessage);
       
