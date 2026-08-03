@@ -401,6 +401,42 @@ router.get('/driver-registrations/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Update driver registration document IDs
+router.put('/driver-registrations/:id/documents', async (req: Request, res: Response) => {
+  try {
+    const documentData = req.body;
+    console.log('📝 Updating registration document IDs:', documentData);
+
+    const { data, error } = await supabase
+      .from('driver_registration_requests')
+      .update({
+        national_id_front_doc_id: documentData.national_id_front_doc_id,
+        national_id_back_doc_id: documentData.national_id_back_doc_id,
+        selfie_with_id_doc_id: documentData.selfie_with_id_doc_id,
+        profile_photo_doc_id: documentData.profile_photo_doc_id,
+        driver_licence_doc_id: documentData.driver_licence_doc_id,
+        vehicle_registration_book_doc_id: documentData.vehicle_registration_book_doc_id,
+        vehicle_photo_doc_id: documentData.vehicle_photo_doc_id,
+        insurance_doc_id: documentData.insurance_doc_id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', getParam(req.params.id))
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error updating document IDs:', error);
+      return res.status(400).json({ error: 'Failed to update document IDs' });
+    }
+
+    console.log('✅ Document IDs updated successfully');
+    res.json({ success: true, message: 'Document IDs updated successfully', data });
+  } catch (error) {
+    console.error('Error updating document IDs:', error);
+    res.status(500).json({ error: 'Failed to update document IDs' });
+  }
+});
+
 // Resubmit driver registration with new documents
 router.put('/driver-registrations/:id/resubmit', async (req: Request, res: Response) => {
   try {
