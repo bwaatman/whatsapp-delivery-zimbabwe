@@ -186,16 +186,21 @@
 
                 const data = await response.json();
 
+                console.log('Server response:', data);
+                console.log('Response status:', response.status);
+
                 if (response.ok) {
                     localStorage.setItem('adminAuth', 'true');
                     localStorage.setItem('adminToken', data.token);
                     localStorage.setItem('adminUser', JSON.stringify(data.user));
                     window.location.href = '/admin';
                 } else {
+                    console.error('Login failed:', data.error);
                     errorMessage.textContent = data.error || 'Login failed. Please try again.';
                     errorMessage.classList.add('show');
                 }
             } catch (error) {
+                console.error('Login error:', error);
                 errorMessage.textContent = 'An error occurred. Please try again.';
                 errorMessage.classList.add('show');
             } finally {
