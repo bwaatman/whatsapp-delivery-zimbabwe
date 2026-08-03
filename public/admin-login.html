@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - WhatsApp Delivery Platform</title>
+    <title>Admin Login - Svika</title>
     <style>
         * {
             margin: 0;
@@ -125,8 +125,8 @@
 
         <form id="loginForm">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required autocomplete="username">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
             </div>
 
             <div class="form-group">
@@ -143,8 +143,8 @@
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const email = document.getElementById('username').value;
+
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
             const loginButton = document.getElementById('loginButton');
