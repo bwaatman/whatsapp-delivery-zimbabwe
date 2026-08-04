@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login - Svika</title>
     <style>
         * {
             margin: 0;
@@ -212,16 +212,24 @@
             messageDiv.style.display = 'none';
             
             try {
+                const requestBody = {
+                    user_type: userType,
+                    password: password
+                };
+
+                // Send email for admin, phone for driver/vendor
+                if (userType === 'admin') {
+                    requestBody.email = phone;
+                } else {
+                    requestBody.phone = phone;
+                }
+
                 const response = await fetch(`${API_BASE}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        user_type: userType,
-                        phone: phone,
-                        password: password
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 
                 const data = await response.json();
