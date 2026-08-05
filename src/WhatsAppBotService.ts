@@ -842,8 +842,19 @@ Please share your location so we can show businesses near you.`;
   }
 
   private async handleLocationPromptState(message: Message, phone: string, messageBody: string, session: CustomerSession) {
-    // If user sends text instead of location, remind them to share location
-    await this.promptForLocation(message);
+    // If user sends text instead of location, provide clearer instructions
+    if (messageBody === 'cancel' || messageBody === 'back') {
+      session.state = 'greeting';
+      session.selectedProducts = [];
+      session.customerName = undefined;
+      session.selectedVendor = undefined;
+      session.selectedCategory = undefined;
+      this.sessions.set(phone, session);
+      await this.sendLocationRequest(message);
+      return;
+    }
+
+    await message.reply('⚠️ Please share your actual location by clicking the 📎 attachment icon and selecting "Location".\n\nType "cancel" to start over.');
   }
 
   private async handleLocationWithDiscovery(message: Message, phone: string, location: any) {
