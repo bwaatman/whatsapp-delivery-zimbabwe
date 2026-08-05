@@ -1108,7 +1108,6 @@ export class ShopService {
         `)
         .eq('registration_status', 'approved')
         .eq('active', true)
-        .eq('is_open', true)
         .not('shop_location', 'is', null);
 
       // Filter by category if provided
