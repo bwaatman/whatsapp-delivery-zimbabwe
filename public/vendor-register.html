@@ -375,7 +375,7 @@
                 <select id="registrationType" name="registrationType" required>
                     <option value="">Select registration type</option>
                     <option value="individual">Individual/Informal</option>
-                    <option value="registered">Registered Business</option>
+                    <option value="registered_business">Registered Business</option>
                 </select>
             </div>
 
@@ -551,7 +551,7 @@
             const registeredFields = document.getElementById('registeredBusinessFields');
             const registeredDocs = document.getElementById('registeredBusinessDocs');
 
-            if (selectedRegistrationType === 'registered') {
+            if (selectedRegistrationType === 'registered_business') {
                 registeredFields.classList.add('show');
                 registeredDocs.style.display = 'block';
             } else {
@@ -591,7 +591,7 @@
             // Check all required files are selected
             const requiredFileInputs = ['nationalId', 'proofOfAddress', 'shopFrontPhoto', 'interiorPhoto'];
 
-            if (selectedRegistrationType === 'registered') {
+            if (selectedRegistrationType === 'registered_business') {
                 requiredFileInputs.push('businessLicense', 'tradingLicense');
             }
 
@@ -630,6 +630,16 @@
                 certificate_of_incorporation: document.getElementById('certificateOfIncorporation').value
             };
 
+            // Count selected files
+            const fileInputs = ['nationalId', 'proofOfAddress', 'shopFrontPhoto', 'interiorPhoto', 'healthCertificate', 'foodHandlingPermit', 'restaurantLicense', 'businessLicense', 'tradingLicense'];
+            let fileCount = 0;
+            fileInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input && input.files && input.files.length > 0) {
+                    fileCount++;
+                }
+            });
+
             let html = '<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">';
             html += '<h3>Business Information</h3>';
             for (const [key, value] of Object.entries(formData)) {
@@ -638,7 +648,7 @@
                 }
             }
             html += '<h3>Uploaded Documents</h3>';
-            html += '<p>Documents ready to upload: ' + Object.keys(uploadedDocuments).length + ' files</p>';
+            html += '<p>Documents ready to upload: ' + fileCount + ' files</p>';
             html += '</div>';
 
             reviewContent.innerHTML = html;
@@ -702,7 +712,7 @@
                     { inputId: 'restaurantLicense', type: 'restaurant_licence' }
                 ];
 
-                if (selectedRegistrationType === 'registered') {
+                if (selectedRegistrationType === 'registered_business') {
                     documentTypes.push(
                         { inputId: 'businessLicense', type: 'business_licence' },
                         { inputId: 'tradingLicense', type: 'trading_licence' }
