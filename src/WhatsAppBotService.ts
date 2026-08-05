@@ -16,6 +16,7 @@ export interface CustomerSession {
   locationReceived?: boolean;
   paymentMethod?: 'cash' | 'card' | 'ecocash';
   lastMessageTime: Date;
+  discoveredCategories?: any[];
 }
 
 export class WhatsAppBotService {
@@ -197,7 +198,7 @@ export class WhatsAppBotService {
           await this.handleLocationReceivedState(message, phone, cleanMessage, session);
           break;
         default:
-          await this.sendGreeting(message);
+          await this.sendLocationRequest(message);
       }
 
       // Update session
@@ -237,32 +238,28 @@ export class WhatsAppBotService {
 
   private async handleGreetingState(message: Message, phone: string, messageBody: string, session: CustomerSession) {
     console.log('👋 handleGreetingState called with messageBody:', messageBody);
-    // Send greeting and display menu/categories
+    // Send location request first (location-first flow)
     try {
-      await this.sendGreeting(message);
-      console.log('👋 Greeting sent, now displaying categories...');
-      await this.displayCategories(message);
-      console.log('👋 Categories displayed');
-      session.state = 'menu_selection';
+      await this.sendLocationRequest(message);
+      console.log('👋 Location request sent');
+      session.state = 'location_prompt';
     } catch (error) {
       console.error('❌ Error in handleGreetingState:', error);
       // Don't crash the bot if greeting fails
     }
   }
 
-  private async sendGreeting(message: Message) {
+  private async sendLocationRequest(message: Message) {
     try {
-      const greeting = `🇿🇼 *Welcome to ZimDelivery!* 🚚
+      const locationRequest = `🇿🇼 *Welcome to Svika!* 🚚
 
 We're here to help you get groceries, food, and more delivered right to your doorstep.
 
-To get started, please select a category from the menu below, or type "track" followed by your order number to check your order status.
+Please share your location so we can show businesses near you.`;
 
-Reply "menu" to see available categories.`;
-      
-      await message.reply(greeting);
+      await message.reply(locationRequest);
     } catch (error) {
-      console.error('❌ Error sending greeting:', error);
+      console.error('❌ Error sending location request:', error);
       throw error; // Re-throw to be caught by outer try-catch
     }
   }
@@ -301,15 +298,21 @@ Reply "menu" to see available categories.`;
       return;
     }
 
-    // Fetch categories to match user input
-    const { data: categories } = await supabase
-      .from('business_categories')
-      .select('*')
-      .order('name');
+    // Use discovered categories if available (from location-based discovery)
+    let categories = session.discoveredCategories;
 
-    if (!categories) {
-      await message.reply('Sorry, no categories are available. Please try again later.');
-      return;
+    // If no discovered categories, fetch all categories
+    if (!categories || categories.length === 0) {
+      const { data: allCategories } = await supabase
+        .from('business_categories')
+        .select('*')
+        .order('name');
+
+      if (!allCategories) {
+        await message.reply('Sorry, no categories are available. Please try again later.');
+        return;
+      }
+      categories = allCategories;
     }
 
     // Try to match by number or name
@@ -319,8 +322,8 @@ Reply "menu" to see available categories.`;
     if (!isNaN(selection) && selection > 0 && selection <= categories.length) {
       selectedCategory = categories[selection - 1];
     } else {
-      selectedCategory = categories.find((cat: any) => 
-        cat.name.toLowerCase().includes(messageBody)
+      selectedCategory = categories.find((cat: any) =>
+        cat.category_name?.toLowerCase().includes(messageBody) || cat.name?.toLowerCase().includes(messageBody)
       );
     }
 
@@ -329,10 +332,18 @@ Reply "menu" to see available categories.`;
       return;
     }
 
-    session.selectedCategory = selectedCategory.id;
+    // Use category_id for discovered categories, id for all categories
+    const categoryId = selectedCategory.category_id || selectedCategory.id;
+
+    if (!categoryId) {
+      await message.reply('Error: Category ID not found. Please try again.');
+      return;
+    }
+
+    session.selectedCategory = categoryId;
     session.state = 'vendor_selection';
-    
-    await this.displayVendors(message, selectedCategory.id);
+
+    await this.displayVendors(message, categoryId);
   }
 
   private async displayVendors(message: Message, categoryId: string) {
@@ -372,7 +383,7 @@ Reply "menu" to see available categories.`;
   private async handleVendorSelectionState(message: Message, phone: string, messageBody: string, session: CustomerSession) {
     if (!session.selectedCategory) {
       session.state = 'greeting';
-      await this.sendGreeting(message);
+      await this.sendLocationRequest(message);
       return;
     }
 
@@ -453,7 +464,7 @@ Reply "menu" to see available categories.`;
 
     if (!session.selectedVendor) {
       session.state = 'greeting';
-      await this.sendGreeting(message);
+      await this.sendLocationRequest(message);
       return;
     }
 
@@ -611,7 +622,7 @@ Reply "menu" to see available categories.`;
       session.selectedProducts = [];
       session.customerName = undefined;
       this.sessions.set(phone, session);
-      await this.sendGreeting(message);
+      await this.sendLocationRequest(message);
       return;
     }
 
@@ -721,8 +732,14 @@ Reply "menu" to see available categories.`;
       console.log('📍 Session:', session);
       console.log('📍 Session orderId:', session?.orderId);
 
-      if (!session || !session.selectedVendor || !session.selectedProducts || session.selectedProducts.length === 0) {
-        await message.reply('No active order found. Please start a new order by typing "menu".');
+      // If no active order, use location discovery flow
+      if (!session || !session.orderId) {
+        await this.handleLocationWithDiscovery(message, phone, location);
+        return;
+      }
+
+      if (!session.selectedVendor || !session.selectedProducts || session.selectedProducts.length === 0) {
+        await message.reply('No active order found. Please start a new order by typing "#menu".');
         return;
       }
 
@@ -827,6 +844,62 @@ Reply "menu" to see available categories.`;
   private async handleLocationPromptState(message: Message, phone: string, messageBody: string, session: CustomerSession) {
     // If user sends text instead of location, remind them to share location
     await this.promptForLocation(message);
+  }
+
+  private async handleLocationWithDiscovery(message: Message, phone: string, location: any) {
+    try {
+      console.log('📍 Location received for vendor discovery:', location);
+
+      // Store location in session (temporary)
+      const session = this.sessions.get(phone);
+      if (!session) {
+        await message.reply('Session expired. Please start over by sending #hi');
+        return;
+      }
+
+      // Get categories with nearby vendors using ShopService
+      const { ShopService } = await import('./ShopService');
+      const shopService = new ShopService();
+
+      const categories = await shopService.getCategoriesWithNearbyVendors(location.latitude, location.longitude);
+
+      if (categories.length === 0) {
+        const noVendorsMessage = "We couldn't find any businesses near you. Please try a different location or check back later.";
+        await message.reply(noVendorsMessage);
+        return;
+      }
+
+      // Build category selection message
+      let categoryMessage = "📍 We found businesses near you:\n\n";
+
+      categories.forEach((category, index) => {
+        categoryMessage += `${index + 1}. ${category.category_icon} ${category.category_name} (${category.vendor_count})\n`;
+      });
+
+      categoryMessage += "\nReply with the number of the category you'd like to order from.";
+
+      await message.reply(categoryMessage);
+
+      // Store categories in session for vendor selection
+      session.state = 'menu_selection';
+      session.discoveredCategories = categories; // Store the discovered categories
+      this.sessions.set(phone, session);
+
+    } catch (error) {
+      console.error('❌ Error in location discovery:', error);
+      await message.reply('Sorry, there was an error processing your location. Please try again.');
+    }
+  }
+
+  private async reverseGeocodeLocation(lat: number, lng: number): Promise<string | null> {
+    try {
+      // TODO: Implement reverse geocoding using external API
+      console.log('🗺️ Reverse geocoding not yet implemented');
+      return null;
+    } catch (error) {
+      console.error('❌ Error reverse geocoding location:', error);
+      return null;
+    }
   }
 
   private async handleLocationReceivedState(message: Message, phone: string, messageBody: string, session: CustomerSession) {
