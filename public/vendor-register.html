@@ -531,18 +531,6 @@
         let uploadedDocuments = {};
         let selectedRegistrationType = '';
 
-        // Generate a simple UUID v4
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-
-        // Generate a temporary entity ID for document uploads
-        const tempEntityId = generateUUID();
-
         // Step navigation
         function showStep(step) {
             document.querySelectorAll('.step').forEach((el, index) => {
@@ -565,88 +553,42 @@
             }
         }
 
-        // File upload handling
+        // File upload handling (just show selected file, no upload yet)
         function setupFileUpload(uploadId, inputId, documentType) {
             const uploadEl = document.getElementById(uploadId);
             const inputEl = document.getElementById(inputId);
-            const progressBar = uploadEl.querySelector('.progress-bar');
-            const progressFill = uploadEl.querySelector('.progress-bar-fill');
             const preview = uploadEl.querySelector('.file-preview');
 
             uploadEl.addEventListener('click', () => inputEl.click());
-            
+
             uploadEl.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadEl.style.borderColor = '#f5576c';
             });
-            
-            uploadEl.addEventListener('dragleave', () => {
+
+            uploadEl.addEventListener('dragleave', (e) => {
+                e.preventDefault();
                 uploadEl.style.borderColor = '#ddd';
             });
-            
+
             uploadEl.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadEl.style.borderColor = '#ddd';
                 const file = e.dataTransfer.files[0];
                 if (file) {
                     inputEl.files = e.dataTransfer.files;
-                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl);
+                    preview.textContent = `Selected: ${file.name}`;
+                    uploadEl.classList.add('has-file');
                 }
             });
 
             inputEl.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl);
+                    preview.textContent = `Selected: ${file.name}`;
+                    uploadEl.classList.add('has-file');
                 }
             });
-        }
-
-        async function handleFileUpload(file, documentType, uploadEl, progressBar, progressFill, preview, inputEl) {
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-            const maxSize = 10 * 1024 * 1024;
-            
-            if (!allowedTypes.includes(file.type)) {
-                alert('Invalid file type. Please upload JPEG, PNG, or PDF files only.');
-                return;
-            }
-            
-            if (file.size > maxSize) {
-                alert('File size exceeds 10MB limit.');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('entityType', 'vendor');
-            formData.append('entityId', tempEntityId);
-            formData.append('documentType', documentType);
-
-            progressBar.classList.add('active');
-            progressFill.style.width = '50%';
-            preview.textContent = 'Uploading...';
-
-            try {
-                const response = await fetch(`${API_BASE}/documents/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    uploadedDocuments[documentType] = data.document_id;
-                    uploadEl.classList.add('has-file');
-                    inputEl.removeAttribute('required'); // Remove required after successful upload
-                    preview.textContent = `Uploaded: ${file.name}`;
-                    progressFill.style.width = '100%';
-                } else {
-                    throw new Error(data.error || 'Upload failed');
-                }
-            } catch (error) {
-                preview.textContent = 'Upload failed: ' + error.message;
-                progressFill.style.background = '#dc3545';
-            }
         }
 
         // Registration type selection
@@ -722,16 +664,17 @@
         function validateStep3() {
             const requiredDocs = ['nationalId', 'proofOfAddress', 'shopFrontPhoto', 'interiorPhoto'];
             const messageDiv = document.getElementById('message');
-            
+
             for (const doc of requiredDocs) {
-                if (!uploadedDocuments[doc]) {
+                const input = document.getElementById(doc);
+                if (!input.files || input.files.length === 0) {
                     messageDiv.className = 'message error';
                     messageDiv.textContent = 'Please upload all required documents';
                     messageDiv.style.display = 'block';
                     return false;
                 }
             }
-            
+
             return true;
         }
 
@@ -767,71 +710,168 @@
         // Form submission
         document.getElementById('reviewForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const submitBtn = document.getElementById('submitBtn');
             const messageDiv = document.getElementById('message');
-            
-            const formData = {
-                business_name: document.getElementById('businessName').value,
-                business_phone: document.getElementById('businessPhone').value,
-                password: document.getElementById('password').value,
-                business_email: document.getElementById('businessEmail').value,
-                business_address: document.getElementById('businessAddress').value,
-                business_license_number: document.getElementById('businessLicenseNumber').value,
-                tax_id: document.getElementById('taxId').value,
-                business_description: document.getElementById('businessDescription').value,
-                shop_address: document.getElementById('shopAddress').value,
-                registration_type: selectedRegistrationType,
-                is_food_vendor: document.getElementById('isFoodVendor').value === 'true',
-                certificate_of_incorporation: document.getElementById('certificateOfIncorporation').value,
-                // Document IDs
-                national_id_doc_id: uploadedDocuments.nationalId,
-                proof_of_address_doc_id: uploadedDocuments.proofOfAddress,
-                certificate_of_incorporation_doc_id: uploadedDocuments.certificateOfIncorporation,
-                shop_front_photo_doc_id: uploadedDocuments.shopFrontPhoto,
-                interior_photo_doc_id: uploadedDocuments.interiorPhoto,
-                kitchen_photo_doc_id: uploadedDocuments.kitchenPhoto,
-                storage_photo_doc_id: uploadedDocuments.storagePhoto,
-                health_certificate_doc_id: uploadedDocuments.healthCertificate,
-                food_handling_permit_doc_id: uploadedDocuments.foodHandlingPermit,
-                restaurant_licence_doc_id: uploadedDocuments.restaurantLicense,
-                business_licence_doc_id: uploadedDocuments.businessLicense,
-                trading_licence_doc_id: uploadedDocuments.tradingLicense
-            };
-            
+
+            // Validate password
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Passwords do not match';
+                messageDiv.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Password must be at least 6 characters';
+                messageDiv.style.display = 'block';
+                return;
+            }
+
+            // Check all required files are selected
+            const requiredFileInputs = ['nationalId', 'proofOfAddress', 'shopFrontPhoto', 'interiorPhoto'];
+
+            if (selectedRegistrationType === 'registered') {
+                requiredFileInputs.push('businessLicense', 'tradingLicense');
+            }
+
+            for (const inputId of requiredFileInputs) {
+                const input = document.getElementById(inputId);
+                if (!input.files || input.files.length === 0) {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = 'Please upload all required documents';
+                    messageDiv.style.display = 'block';
+                    return;
+                }
+            }
+
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.textContent = 'Creating vendor...';
             messageDiv.style.display = 'none';
-            
+
             try {
-                const response = await fetch(`${API_BASE}/shops/register`, {
+                // Step 1: Create vendor first
+                const vendorData = {
+                    business_name: document.getElementById('businessName').value,
+                    business_phone: document.getElementById('businessPhone').value,
+                    password: document.getElementById('password').value,
+                    business_email: document.getElementById('businessEmail').value,
+                    business_address: document.getElementById('businessAddress').value,
+                    business_license_number: document.getElementById('businessLicenseNumber').value,
+                    tax_id: document.getElementById('taxId').value,
+                    business_description: document.getElementById('businessDescription').value,
+                    shop_address: document.getElementById('shopAddress').value,
+                    registration_type: selectedRegistrationType,
+                    is_food_vendor: document.getElementById('isFoodVendor').value === 'true',
+                    certificate_of_incorporation: document.getElementById('certificateOfIncorporation').value
+                };
+
+                const vendorResponse = await fetch(`${API_BASE}/shops/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(vendorData)
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    messageDiv.className = 'message success';
-                    messageDiv.textContent = 'Registration submitted successfully! Your application is pending approval.';
-                    messageDiv.style.display = 'block';
-                    document.getElementById('registrationForm').reset();
-                    document.getElementById('registrationTypeForm').reset();
-                    document.getElementById('documentsForm').reset();
-                    uploadedDocuments = {};
-                    selectedRegistrationType = '';
-                    showStep(1);
-                } else {
-                    messageDiv.className = 'message error';
-                    messageDiv.textContent = data.error || 'Registration failed. Please try again.';
-                    messageDiv.style.display = 'block';
+
+                const vendorResult = await vendorResponse.json();
+
+                if (!vendorResponse.ok) {
+                    throw new Error(vendorResult.error || 'Failed to create vendor');
                 }
+
+                const vendorId = vendorResult.data.merchant.id;
+                const registrationId = vendorResult.data.registration_request.id;
+                console.log('✅ Vendor created:', vendorId);
+
+                // Step 2: Upload documents with actual vendor ID
+                submitBtn.textContent = 'Uploading documents...';
+                uploadedDocuments = {};
+
+                const documentTypes = [
+                    { inputId: 'nationalId', type: 'national_id' },
+                    { inputId: 'proofOfAddress', type: 'proof_of_address' },
+                    { inputId: 'shopFrontPhoto', type: 'shop_front_photo' },
+                    { inputId: 'interiorPhoto', type: 'interior_photo' },
+                    { inputId: 'healthCertificate', type: 'health_certificate' },
+                    { inputId: 'foodHandlingPermit', type: 'food_handling_permit' },
+                    { inputId: 'restaurantLicense', type: 'restaurant_licence' }
+                ];
+
+                if (selectedRegistrationType === 'registered') {
+                    documentTypes.push(
+                        { inputId: 'businessLicense', type: 'business_licence' },
+                        { inputId: 'tradingLicense', type: 'trading_licence' }
+                    );
+                }
+
+                for (const doc of documentTypes) {
+                    const input = document.getElementById(doc.inputId);
+                    if (input.files && input.files.length > 0) {
+                        const formData = new FormData();
+                        formData.append('file', input.files[0]);
+                        formData.append('entityType', 'vendor');
+                        formData.append('entityId', vendorId);
+                        formData.append('documentType', doc.type);
+
+                        const uploadResponse = await fetch(`${API_BASE}/documents/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const uploadData = await uploadResponse.json();
+
+                        if (uploadData.success) {
+                            uploadedDocuments[doc.type] = uploadData.document_id;
+                            console.log(`✅ Uploaded ${doc.type}: ${uploadData.document_id}`);
+                        } else {
+                            throw new Error(`Failed to upload ${doc.type}`);
+                        }
+                    }
+                }
+
+                // Step 3: Update registration with document IDs
+                submitBtn.textContent = 'Finalizing registration...';
+
+                const updateResponse = await fetch(`${API_BASE}/vendor-registrations/${registrationId}/documents`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        national_id_doc_id: uploadedDocuments.national_id,
+                        proof_of_address_doc_id: uploadedDocuments.proof_of_address,
+                        shop_front_photo_doc_id: uploadedDocuments.shop_front_photo,
+                        interior_photo_doc_id: uploadedDocuments.interior_photo,
+                        health_certificate_doc_id: uploadedDocuments.health_certificate,
+                        food_handling_permit_doc_id: uploadedDocuments.food_handling_permit,
+                        restaurant_licence_doc_id: uploadedDocuments.restaurant_licence,
+                        business_licence_doc_id: uploadedDocuments.business_licence,
+                        trading_licence_doc_id: uploadedDocuments.trading_licence
+                    })
+                });
+
+                if (!updateResponse.ok) {
+                    throw new Error('Failed to update registration with documents');
+                }
+
+                messageDiv.className = 'message success';
+                messageDiv.textContent = 'Registration submitted successfully! Your application is pending approval.';
+                messageDiv.style.display = 'block';
+                document.getElementById('registrationForm').reset();
+                document.getElementById('registrationTypeForm').reset();
+                document.getElementById('documentsForm').reset();
+                uploadedDocuments = {};
+                selectedRegistrationType = '';
+                showStep(1);
+
             } catch (error) {
                 messageDiv.className = 'message error';
-                messageDiv.textContent = 'Network error. Please check your connection and try again.';
+                messageDiv.textContent = error.message || 'Registration failed. Please try again.';
                 messageDiv.style.display = 'block';
             } finally {
                 submitBtn.disabled = false;
