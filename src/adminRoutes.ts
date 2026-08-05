@@ -507,13 +507,13 @@ router.get('/admin/delivery-coverage-analytics', authenticateAdmin, async (req: 
         name,
         icon,
         default_delivery_radius_km,
-        merchants!inner (
+        merchants (
           id,
-          service_radius_km
+          service_radius_km,
+          registration_status,
+          active
         )
-      `)
-      .eq('merchants.registration_status', 'approved')
-      .eq('merchants.active', true);
+      `);
 
     if (error) {
       console.error('Error getting delivery coverage analytics:', error);
@@ -522,15 +522,17 @@ router.get('/admin/delivery-coverage-analytics', authenticateAdmin, async (req: 
 
     // Process analytics for each category
     const analytics = data.map(category => {
-      const vendors = Array.isArray(category.merchants) ? category.merchants : [category.merchants];
-      const validVendors = vendors.filter(v => v !== null);
+      const allMerchants = category.merchants || [];
+      const validVendors = allMerchants.filter((v: any) =>
+        v && v.registration_status === 'approved' && v.active === true
+      );
 
       const vendorRadii = validVendors
-        .map(v => v.service_radius_km)
-        .filter(r => r !== null && r !== undefined);
+        .map((v: any) => v.service_radius_km)
+        .filter((r: number | null) => r !== null && r !== undefined);
 
       const avgRadius = vendorRadii.length > 0
-        ? vendorRadii.reduce((sum, r) => sum + r, 0) / vendorRadii.length
+        ? vendorRadii.reduce((sum: number, r: number) => sum + r, 0) / vendorRadii.length
         : category.default_delivery_radius_km;
 
       const maxRadius = vendorRadii.length > 0
@@ -541,7 +543,7 @@ router.get('/admin/delivery-coverage-analytics', authenticateAdmin, async (req: 
         ? Math.min(...vendorRadii)
         : category.default_delivery_radius_km;
 
-      const vendorsAtMax = validVendors.filter(v =>
+      const vendorsAtMax = validVendors.filter((v: any) =>
         v.service_radius_km === category.default_delivery_radius_km
       ).length;
 
@@ -575,23 +577,27 @@ router.get('/admin/delivery-radii', authenticateAdmin, async (req: Request, res:
         name,
         icon,
         default_delivery_radius_km,
-        merchants!inner (id)
-      `)
-      .eq('merchants.registration_status', 'approved')
-      .eq('merchants.active', true);
+        merchants (id, registration_status, active)
+      `);
 
     if (error) {
       console.error('Error getting delivery radii:', error);
       return res.status(500).json({ error: 'Failed to get delivery radii' });
     }
 
-    const radiiConfig = data.map(category => ({
-      category_id: category.id,
-      category_name: category.name,
-      category_icon: category.icon,
-      default_delivery_radius_km: category.default_delivery_radius_km,
-      vendor_count: Array.isArray(category.merchants) ? category.merchants.length : 1
-    }));
+    const radiiConfig = data.map(category => {
+      const approvedVendors = category.merchants
+        ? category.merchants.filter((m: any) => m.registration_status === 'approved' && m.active === true)
+        : [];
+
+      return {
+        category_id: category.id,
+        category_name: category.name,
+        category_icon: category.icon,
+        default_delivery_radius_km: category.default_delivery_radius_km,
+        vendor_count: approvedVendors.length
+      };
+    });
 
     res.json(radiiConfig);
   } catch (error) {
