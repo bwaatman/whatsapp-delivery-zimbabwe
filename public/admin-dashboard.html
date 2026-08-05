@@ -509,9 +509,23 @@
         </div>
 
         <div class="section">
-            <h2>� Vehicle Restrictions</h2>
+            <h2>🚗 Vehicle Restrictions</h2>
             <div id="vehicle-restrictions-section">
                 <div class="loading">Loading vehicle restrictions...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📍 Customer Delivery Radius</h2>
+            <div id="delivery-radius-section">
+                <div class="loading">Loading delivery radius configuration...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Delivery Coverage Analytics</h2>
+            <div id="delivery-analytics-section">
+                <div class="loading">Loading delivery coverage analytics...</div>
             </div>
         </div>
 
@@ -620,6 +634,12 @@
 
                 // Load vehicle restrictions
                 await loadVehicleRestrictions();
+
+                // Load delivery radius configuration
+                await loadDeliveryRadiusConfig();
+
+                // Load delivery coverage analytics
+                await loadDeliveryCoverageAnalytics();
 
                 // Load GPS settings
                 await loadGpsSettings();
@@ -1736,6 +1756,151 @@
             } catch (error) {
                 console.error('Error updating GPS setting:', error);
                 alert('Error updating GPS setting');
+            }
+        }
+
+        async function loadDeliveryRadiusConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/delivery-radii`, {
+                    headers: getAuthHeaders()
+                });
+                const config = await response.json();
+
+                let html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Icon</th>
+                                    <th>Default Radius (km)</th>
+                                    <th>Vendor Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                config.forEach(category => {
+                    html += `
+                        <tr>
+                            <td>${category.category_name}</td>
+                            <td>${category.category_icon}</td>
+                            <td>
+                                <input type="number" 
+                                       id="radius-${category.category_id}" 
+                                       value="${category.default_delivery_radius_km}" 
+                                       min="0" 
+                                       step="0.5" 
+                                       style="width: 80px; padding: 5px;">
+                            </td>
+                            <td>${category.vendor_count}</td>
+                            <td>
+                                <button class="btn btn-confirm" onclick="updateCategoryRadius('${category.category_id}')">Update</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-refresh" onclick="loadDeliveryRadiusConfig()">🔄 Refresh</button>
+                    </div>
+                `;
+
+                document.getElementById('delivery-radius-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading delivery radius config:', error);
+                document.getElementById('delivery-radius-section').innerHTML =
+                    '<div class="error">Error loading delivery radius configuration</div>';
+            }
+        }
+
+        async function updateCategoryRadius(categoryId) {
+            try {
+                const radiusInput = document.getElementById(`radius-${categoryId}`);
+                const radiusKm = parseFloat(radiusInput.value);
+
+                if (isNaN(radiusKm) || radiusKm < 0) {
+                    alert('Please enter a valid radius value');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/admin/delivery-radii/${categoryId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ radius_km: radiusKm })
+                });
+
+                if (response.ok) {
+                    alert('Category delivery radius updated successfully');
+                    await loadDeliveryRadiusConfig();
+                } else {
+                    alert('Failed to update category delivery radius');
+                }
+            } catch (error) {
+                console.error('Error updating category radius:', error);
+                alert('Error updating category delivery radius');
+            }
+        }
+
+        async function loadDeliveryCoverageAnalytics() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/delivery-coverage-analytics`, {
+                    headers: getAuthHeaders()
+                });
+                const analytics = await response.json();
+
+                let html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Default Radius (km)</th>
+                                    <th>Total Vendors</th>
+                                    <th>Avg Vendor Radius (km)</th>
+                                    <th>Largest Radius (km)</th>
+                                    <th>Smallest Radius (km)</th>
+                                    <th>At Category Max</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                analytics.forEach(category => {
+                    html += `
+                        <tr>
+                            <td>${category.category_icon} ${category.category_name}</td>
+                            <td>${category.default_radius_km}</td>
+                            <td>${category.total_vendors}</td>
+                            <td>${category.average_vendor_radius_km}</td>
+                            <td>${category.largest_radius_km}</td>
+                            <td>${category.smallest_radius_km}</td>
+                            <td>${category.vendors_at_category_maximum}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-refresh" onclick="loadDeliveryCoverageAnalytics()">🔄 Refresh</button>
+                    </div>
+                `;
+
+                document.getElementById('delivery-analytics-section').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading delivery coverage analytics:', error);
+                document.getElementById('delivery-analytics-section').innerHTML =
+                    '<div class="error">Error loading delivery coverage analytics</div>';
             }
         }
 

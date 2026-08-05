@@ -336,6 +336,19 @@
         </div>
 
         <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>📍 Service Radius</h2>
+                <button class="btn btn-refresh" onclick="saveServiceRadius()">Save Radius</button>
+            </div>
+            <div id="service-radius-section">
+                <div class="loading">Loading service radius configuration...</div>
+            </div>
+            <div id="coverage-map-section" style="margin-top: 20px; display: none;">
+                <button class="btn btn-refresh" onclick="showCoverageMap()">🗺️ Show Coverage Area</button>
+            </div>
+        </div>
+
+        <div class="section">
             <h2>📍 Shop Status</h2>
             <div id="shop-status-section">
                 <div class="loading">Loading shop status...</div>
@@ -601,6 +614,9 @@
 
                 // Load wallet information
                 await loadWalletInfo();
+
+                // Load service radius configuration
+                await loadServiceRadiusConfig();
 
             } catch (error) {
                 console.error('Error loading dashboard:', error);
@@ -1139,6 +1155,83 @@
 
         function hideProductDetails() {
             document.getElementById('product-details-section').style.display = 'none';
+        }
+
+        // Service Radius Functions
+        async function loadServiceRadiusConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/service-radius`);
+                const radiusInfo = await response.json();
+
+                let html = `
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <p style="margin-bottom: 10px;"><strong>Category:</strong> ${radiusInfo.category_name}</p>
+                        <p style="margin-bottom: 10px;"><strong>Category Maximum Radius:</strong> ${radiusInfo.category_default_radius_km} km</p>
+                        <p style="margin-bottom: 10px;"><strong>Your Service Radius:</strong></p>
+                        <input type="number" 
+                               id="service-radius-input" 
+                               value="${radiusInfo.service_radius_km || radiusInfo.category_default_radius_km}" 
+                               min="0" 
+                               step="0.5" 
+                               max="${radiusInfo.category_default_radius_km}"
+                               style="width: 100%; padding: 10px; border: 2px solid #f5576c; border-radius: 5px; font-size: 1em;">
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            Cannot exceed category maximum of ${radiusInfo.category_default_radius_km} km
+                        </p>
+                        <p style="margin-top: 5px; font-weight: bold; color: #00f2fe;">
+                            Effective Radius: ${radiusInfo.effective_radius_km} km
+                        </p>
+                    </div>
+                `;
+
+                document.getElementById('service-radius-section').innerHTML = html;
+                document.getElementById('coverage-map-section').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading service radius config:', error);
+                document.getElementById('service-radius-section').innerHTML =
+                    '<div class="error">Error loading service radius configuration</div>';
+            }
+        }
+
+        async function saveServiceRadius() {
+            try {
+                const radiusInput = document.getElementById('service-radius-input');
+                const radiusKm = parseFloat(radiusInput.value);
+
+                if (isNaN(radiusKm) || radiusKm < 0) {
+                    alert('Please enter a valid radius value');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/shop/${currentShopId}/service-radius`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ service_radius_km: radiusKm })
+                });
+
+                if (response.ok) {
+                    alert('Service radius updated successfully');
+                    await loadServiceRadiusConfig();
+                } else {
+                    const errorData = await response.json();
+                    alert('Failed to update service radius: ' + (errorData.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating service radius:', error);
+                alert('Error updating service radius');
+            }
+        }
+
+        function showCoverageMap() {
+            alert('Coverage map feature will be implemented with Leaflet.js integration. This will show your delivery coverage area on an interactive map.');
+            // TODO: Integrate Leaflet.js for interactive coverage map
+            // This will display:
+            // - Vendor GPS location (center point)
+            // - Delivery circle with configured radius
+            // - Visual representation of coverage area
         }
 
         async function viewProductDetails(productId) {

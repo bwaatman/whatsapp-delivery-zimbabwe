@@ -98,7 +98,19 @@ export class WhatsAppFlowService {
 
     // CASE 1: No active order exists
     if (!activeOrder) {
-      await this.handleNewCustomerFlow(from, message);
+      // Check if customer is sharing location (location-first flow)
+      if (normalizedIntent === 'LOCATION_SHARED' || messageType === 'location') {
+        console.log('📍 Location detected from new customer - handling location confirmation');
+        await this.handleLocationConfirmationFlow(from, message);
+      }
+      // Handle text messages (new customer greeting)
+      else if (messageType === 'text' || normalizedIntent) {
+        console.log('📝 Text message from new customer - requesting location');
+        await this.handleNewCustomerFlow(from, message);
+      }
+      else {
+        console.log('📎 Unsupported message type for new customer');
+      }
       return;
     }
 
@@ -162,32 +174,119 @@ export class WhatsAppFlowService {
   }
 
   private async handleNewCustomerFlow(from: string, message: any): Promise<void> {
-    console.log('🆕 CASE 1: New customer - creating order...');
+    console.log('🆕 CASE 1: New customer - requesting location...');
 
     try {
-      // Create new order
-      const newOrder = await this.orderService.createOrder(from);
+      // Send location request message first (before creating order)
+      const locationRequestMessage = "Welcome to Svika! 🇿🇼 Please share your location so we can show businesses near you.";
       
-      if (!newOrder) {
-        console.error('❌ Failed to create new order');
-        return;
-      }
-
-      console.log(`✅ New order created: ${newOrder.id}`);
-
-      // Send welcome message with order instructions
-      const welcomeMessage = "Welcome to Svika! 🇿🇼 What are we delivering today? Please reply with your order details, followed by your WhatsApp Location Pin so our rider can find you.";
-      
-      const messageSent = await this.whatsappService.sendTextMessage(from, welcomeMessage);
+      const messageSent = await this.whatsappService.sendTextMessage(from, locationRequestMessage);
       
       if (messageSent) {
-        console.log('📤 Welcome message sent successfully');
+        console.log('📤 Location request message sent successfully');
       } else {
-        console.error('❌ Failed to send welcome message');
+        console.error('❌ Failed to send location request message');
       }
 
     } catch (error) {
       console.error('❌ Error in new customer flow:', error);
+    }
+  }
+
+  private async handleLocationConfirmationFlow(from: string, message: any): Promise<void> {
+    console.log('📍 CASE 2: Location received - confirming address...');
+
+    try {
+      const location = message.location || message.locationData;
+      console.log(`🌍 Location coordinates: ${location.latitude}, ${location.longitude}`);
+
+      // Store location in session (temporary, not permanent)
+      // TODO: Implement session-based storage for customer location
+
+      // Reverse geocode the location to get address
+      const address = await this.reverseGeocodeLocation(location.latitude, location.longitude);
+      
+      let addressText = address;
+      if (!address) {
+        addressText = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+        console.log('⚠️ Reverse geocoding failed, using coordinates');
+      }
+
+      // Send location confirmation message
+      const confirmationMessage = `📍 We found your location:\n${addressText}\n\nIs this correct?`;
+      
+      const messageSent = await this.whatsappService.sendTextMessage(from, confirmationMessage);
+      
+      if (messageSent) {
+        console.log('📤 Location confirmation message sent successfully');
+      } else {
+        console.error('❌ Failed to send location confirmation message');
+      }
+
+      // TODO: Add interactive buttons for "Use this location" and "Share another location"
+      // For now, continue with vendor discovery after a brief delay
+
+    } catch (error) {
+      console.error('❌ Error in location confirmation flow:', error);
+    }
+  }
+
+  private async handleVendorDiscoveryFlow(from: string, message: any): Promise<void> {
+    console.log('🔍 CASE 3: Location confirmed - discovering nearby vendors...');
+
+    try {
+      // Get customer's location from session
+      // TODO: Retrieve from session-based storage
+      const customerLat = -17.8292; // Default: Harare (temporary)
+      const customerLng = 31.0522;
+
+      // Import ShopService for vendor discovery
+      const { ShopService } = await import('./ShopService');
+      const shopService = new ShopService();
+
+      // Get categories with nearby vendors
+      const categories = await shopService.getCategoriesWithNearbyVendors(customerLat, customerLng);
+
+      if (categories.length === 0) {
+        const noVendorsMessage = "We couldn't find any businesses near you. Please try a different location or check back later.";
+        await this.whatsappService.sendTextMessage(from, noVendorsMessage);
+        return;
+      }
+
+      // Build category selection message
+      let categoryMessage = "📍 We found businesses near you:\n\n";
+      
+      categories.forEach((category, index) => {
+        categoryMessage += `${index + 1}. ${category.category_icon} ${category.category_name} (${category.vendor_count})\n`;
+      });
+
+      categoryMessage += "\nReply with the number of the category you'd like to order from.";
+
+      const messageSent = await this.whatsappService.sendTextMessage(from, categoryMessage);
+      
+      if (messageSent) {
+        console.log('📤 Category selection message sent successfully');
+      } else {
+        console.error('❌ Failed to send category selection message');
+      }
+
+      // TODO: Store categories in session for vendor selection
+      // TODO: Handle category selection response
+
+    } catch (error) {
+      console.error('❌ Error in vendor discovery flow:', error);
+    }
+  }
+
+  private async reverseGeocodeLocation(lat: number, lng: number): Promise<string | null> {
+    try {
+      // TODO: Implement reverse geocoding using external API (e.g., Google Maps, OpenStreetMap)
+      // For now, return null to indicate geocoding not available
+      console.log('🗺️ Reverse geocoding not yet implemented');
+      return null;
+    } catch (error) {
+      console.error('❌ Error reverse geocoding location:', error);
+      return null;
     }
   }
 

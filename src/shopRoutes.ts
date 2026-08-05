@@ -453,4 +453,96 @@ router.get('/shop/:id/products/:productId/variants', async (req: Request, res: R
   }
 });
 
+// Vendor Service Radius Endpoints
+
+// Update vendor service radius
+router.put('/shop/:id/service-radius', async (req: Request, res: Response) => {
+  try {
+    const { service_radius_km } = req.body;
+
+    if (typeof service_radius_km !== 'number' || service_radius_km < 0) {
+      return res.status(400).json({ error: 'Invalid service radius value' });
+    }
+
+    const success = await shopService.updateVendorServiceRadius(getParam(req.params.id), service_radius_km);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to update service radius. Ensure it does not exceed category maximum.' });
+    }
+    res.json({ success: true, message: 'Service radius updated successfully' });
+  } catch (error) {
+    console.error('Error updating service radius:', error);
+    res.status(500).json({ error: 'Failed to update service radius' });
+  }
+});
+
+// Get vendor service radius info
+router.get('/shop/:id/service-radius', async (req: Request, res: Response) => {
+  try {
+    const radiusInfo = await shopService.getVendorServiceRadiusInfo(getParam(req.params.id));
+    if (!radiusInfo) {
+      return res.status(404).json({ error: 'Service radius info not found' });
+    }
+    res.json(radiusInfo);
+  } catch (error) {
+    console.error('Error getting service radius info:', error);
+    res.status(500).json({ error: 'Failed to get service radius info' });
+  }
+});
+
+// Vendor Discovery Endpoints
+
+// Get nearby vendors by customer location
+router.get('/vendors/nearby', async (req: Request, res: Response) => {
+  try {
+    const { lat, lng, category_id } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'Latitude and longitude are required' });
+    }
+
+    const customerLat = parseFloat(lat as string);
+    const customerLng = parseFloat(lng as string);
+
+    if (isNaN(customerLat) || isNaN(customerLng)) {
+      return res.status(400).json({ error: 'Invalid latitude or longitude values' });
+    }
+
+    const nearbyVendors = await shopService.findNearbyVendors(
+      customerLat,
+      customerLng,
+      category_id as string
+    );
+
+    res.json(nearbyVendors);
+  } catch (error) {
+    console.error('Error finding nearby vendors:', error);
+    res.status(500).json({ error: 'Failed to find nearby vendors' });
+  }
+});
+
+// Get categories with nearby vendors
+router.get('/vendors/nearby/categories', async (req: Request, res: Response) => {
+  try {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'Latitude and longitude are required' });
+    }
+
+    const customerLat = parseFloat(lat as string);
+    const customerLng = parseFloat(lng as string);
+
+    if (isNaN(customerLat) || isNaN(customerLng)) {
+      return res.status(400).json({ error: 'Invalid latitude or longitude values' });
+    }
+
+    const categories = await shopService.getCategoriesWithNearbyVendors(customerLat, customerLng);
+
+    res.json(categories);
+  } catch (error) {
+    console.error('Error finding categories with nearby vendors:', error);
+    res.status(500).json({ error: 'Failed to find categories with nearby vendors' });
+  }
+});
+
 export default router;

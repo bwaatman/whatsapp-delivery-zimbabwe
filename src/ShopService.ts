@@ -92,6 +92,31 @@ export interface ShopDashboardSummary {
   today_orders: number;
 }
 
+export interface NearbyVendor {
+  id: string;
+  name: string;
+  contact_phone: string;
+  shop_location?: string;
+  shop_address?: string;
+  category_id?: string;
+  category_name?: string;
+  category_icon?: string;
+  service_radius_km?: number;
+  effective_radius_km?: number;
+  distance_km?: number;
+  is_open: boolean;
+  registration_status?: string;
+}
+
+export interface CategoryWithVendors {
+  category_id: string;
+  category_name: string;
+  category_icon: string;
+  default_delivery_radius_km: number;
+  vendor_count: number;
+  vendors: NearbyVendor[];
+}
+
 export class ShopService {
   async getShopById(shopId: string): Promise<Shop | null> {
     try {
@@ -1051,6 +1076,298 @@ export class ShopService {
       return { merchant, registration_request: data };
     } catch (error) {
       console.error('❌ Exception in submitVendorRegistration:', error);
+      return null;
+    }
+  }
+
+  // Vendor Discovery Methods
+
+  async findNearbyVendors(customerLat: number, customerLng: number, categoryId?: string): Promise<NearbyVendor[]> {
+    try {
+      console.log('🔍 Finding nearby vendors for location:', customerLat, customerLng, 'Category:', categoryId || 'All');
+
+      // Build the query with PostGIS filtering
+      let query = supabase
+        .from('merchants')
+        .select(`
+          id,
+          name,
+          contact_phone,
+          shop_location,
+          shop_address,
+          category_id,
+          service_radius_km,
+          is_open,
+          registration_status,
+          business_categories!inner (
+            id,
+            name,
+            icon,
+            default_delivery_radius_km
+          )
+        `)
+        .eq('registration_status', 'approved')
+        .eq('active', true)
+        .eq('is_open', true)
+        .not('shop_location', 'is', null);
+
+      // Filter by category if provided
+      if (categoryId) {
+        query = query.eq('category_id', categoryId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('❌ Error fetching vendors:', error);
+        return [];
+      }
+
+      // Filter by distance and radius using PostGIS
+      const nearbyVendors: NearbyVendor[] = [];
+
+      for (const merchant of data) {
+        const category = Array.isArray(merchant.business_categories) ? merchant.business_categories[0] : merchant.business_categories;
+        const categoryRadius = category.default_delivery_radius_km;
+        const vendorRadius = merchant.service_radius_km;
+
+        // Effective radius is MIN(category default, vendor radius)
+        // If vendor radius is NULL, use category default
+        const effectiveRadius = vendorRadius !== null && vendorRadius !== undefined
+          ? Math.min(categoryRadius, vendorRadius)
+          : categoryRadius;
+
+        // Calculate distance using PostGIS ST_DistanceSphere
+        const { data: distanceData, error: distanceError } = await supabase.rpc('calculate_distance', {
+          lat1: customerLat,
+          lng1: customerLng,
+          lat2: null, // Will be extracted from shop_location
+          lng2: null  // Will be extracted from shop_location
+        });
+
+        // Manual distance calculation using ST_DistanceSphere
+        const distanceQuery = `
+          SELECT ST_DistanceSphere(
+            ST_SetSRID(ST_MakePoint($1, $2), 4326),
+            shop_location
+          ) / 1000 as distance_km
+          FROM merchants
+          WHERE id = $3
+        `;
+
+        const { data: distanceResult, error: distanceCalcError } = await supabase
+          .rpc('calculate_distance_between_points', {
+            point1_lat: customerLat,
+            point1_lng: customerLng,
+            merchant_id: merchant.id
+          });
+
+        // Use direct PostGIS query for distance calculation
+        const { data: shopData } = await supabase
+          .from('merchants')
+          .select('shop_location')
+          .eq('id', merchant.id)
+          .single();
+
+        if (!shopData || !shopData.shop_location) {
+          console.warn('⚠️ Shop location missing for vendor:', merchant.id);
+          continue;
+        }
+
+        // Calculate distance using PostGIS
+        const distanceKm = await this.calculateDistanceBetweenPoints(
+          customerLat,
+          customerLng,
+          shopData.shop_location
+        );
+
+        if (distanceKm === null) {
+          console.warn('⚠️ Could not calculate distance for vendor:', merchant.id);
+          continue;
+        }
+
+        // Check if vendor is within effective radius
+        if (distanceKm <= effectiveRadius) {
+          nearbyVendors.push({
+            id: merchant.id,
+            name: merchant.name,
+            contact_phone: merchant.contact_phone,
+            shop_location: merchant.shop_location,
+            shop_address: merchant.shop_address,
+            category_id: merchant.category_id,
+            category_name: category.name,
+            category_icon: category.icon,
+            service_radius_km: merchant.service_radius_km,
+            effective_radius_km: effectiveRadius,
+            distance_km: distanceKm,
+            is_open: merchant.is_open,
+            registration_status: merchant.registration_status
+          });
+        }
+      }
+
+      console.log(`✅ Found ${nearbyVendors.length} nearby vendors`);
+      return nearbyVendors.sort((a, b) => (a.distance_km || 0) - (b.distance_km || 0));
+    } catch (error) {
+      console.error('❌ Exception in findNearbyVendors:', error);
+      return [];
+    }
+  }
+
+  private async calculateDistanceBetweenPoints(lat: number, lng: number, shopLocation: any): Promise<number | null> {
+    try {
+      // Use PostGIS ST_DistanceSphere for accurate distance calculation
+      const { data, error } = await supabase
+        .rpc('calculate_distance_from_point', {
+          lat: lat,
+          lng: lng,
+          shop_location: shopLocation
+        });
+
+      if (error) {
+        console.error('❌ Error calculating distance:', error);
+        return null;
+      }
+
+      return data as number;
+    } catch (error) {
+      console.error('❌ Exception in calculateDistanceBetweenPoints:', error);
+      return null;
+    }
+  }
+
+  async getCategoriesWithNearbyVendors(customerLat: number, customerLng: number): Promise<CategoryWithVendors[]> {
+    try {
+      console.log('🔍 Getting categories with nearby vendors for location:', customerLat, customerLng);
+
+      // Get all nearby vendors first
+      const nearbyVendors = await this.findNearbyVendors(customerLat, customerLng);
+
+      // Group by category
+      const categoryMap = new Map<string, CategoryWithVendors>();
+
+      for (const vendor of nearbyVendors) {
+        if (!vendor.category_id || !vendor.category_name) continue;
+
+        if (!categoryMap.has(vendor.category_id)) {
+          categoryMap.set(vendor.category_id, {
+            category_id: vendor.category_id,
+            category_name: vendor.category_name,
+            category_icon: vendor.category_icon || '📦',
+            default_delivery_radius_km: vendor.effective_radius_km || 20,
+            vendor_count: 0,
+            vendors: []
+          });
+        }
+
+        const category = categoryMap.get(vendor.category_id)!;
+        category.vendors.push(vendor);
+        category.vendor_count++;
+      }
+
+      // Convert to array and sort by vendor count
+      const categories = Array.from(categoryMap.values())
+        .sort((a, b) => b.vendor_count - a.vendor_count);
+
+      console.log(`✅ Found ${categories.length} categories with nearby vendors`);
+      return categories;
+    } catch (error) {
+      console.error('❌ Exception in getCategoriesWithNearbyVendors:', error);
+      return [];
+    }
+  }
+
+  async updateVendorServiceRadius(shopId: string, serviceRadiusKm: number): Promise<boolean> {
+    try {
+      console.log('🏪 Updating service radius for shop:', shopId, 'Radius:', serviceRadiusKm);
+
+      // Get shop's category to validate radius doesn't exceed category maximum
+      const shop = await this.getShopById(shopId);
+      if (!shop || !shop.category_id) {
+        console.error('❌ Shop not found or has no category');
+        return false;
+      }
+
+      // Get category default radius
+      const { data: category, error: categoryError } = await supabase
+        .from('business_categories')
+        .select('default_delivery_radius_km')
+        .eq('id', shop.category_id)
+        .single();
+
+      if (categoryError || !category) {
+        console.error('❌ Error fetching category:', categoryError);
+        return false;
+      }
+
+      // Validate that vendor radius doesn't exceed category maximum
+      if (serviceRadiusKm > category.default_delivery_radius_km) {
+        console.error(`❌ Service radius ${serviceRadiusKm} km exceeds category maximum ${category.default_delivery_radius_km} km`);
+        return false;
+      }
+
+      // Update service radius
+      const { error } = await supabase
+        .from('merchants')
+        .update({ service_radius_km: serviceRadiusKm })
+        .eq('id', shopId);
+
+      if (error) {
+        console.error('❌ Error updating service radius:', error);
+        return false;
+      }
+
+      console.log('✅ Service radius updated successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in updateVendorServiceRadius:', error);
+      return false;
+    }
+  }
+
+  async getVendorServiceRadiusInfo(shopId: string): Promise<any> {
+    try {
+      console.log('🏪 Getting service radius info for shop:', shopId);
+
+      const { data, error } = await supabase
+        .from('merchants')
+        .select(`
+          id,
+          service_radius_km,
+          category_id,
+          business_categories!inner (
+            id,
+            name,
+            default_delivery_radius_km
+          )
+        `)
+        .eq('id', shopId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error fetching service radius info:', error);
+        return null;
+      }
+
+      const category = Array.isArray(data.business_categories) ? data.business_categories[0] : data.business_categories;
+      const vendorRadius = data.service_radius_km;
+      const categoryRadius = category.default_delivery_radius_km;
+
+      // Calculate effective radius
+      const effectiveRadius = vendorRadius !== null && vendorRadius !== undefined
+        ? Math.min(categoryRadius, vendorRadius)
+        : categoryRadius;
+
+      return {
+        shop_id: data.id,
+        service_radius_km: vendorRadius,
+        category_id: data.category_id,
+        category_name: category.name,
+        category_default_radius_km: categoryRadius,
+        effective_radius_km: effectiveRadius
+      };
+    } catch (error) {
+      console.error('❌ Exception in getVendorServiceRadiusInfo:', error);
       return null;
     }
   }

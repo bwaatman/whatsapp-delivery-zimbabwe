@@ -496,6 +496,138 @@ router.get('/admin/orders', authenticateAdmin, async (req: Request, res: Respons
   }
 });
 
+// Delivery Coverage Analytics (protected)
+router.get('/admin/delivery-coverage-analytics', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    // Get delivery coverage analytics per category
+    const { data, error } = await supabase
+      .from('business_categories')
+      .select(`
+        id,
+        name,
+        icon,
+        default_delivery_radius_km,
+        merchants!inner (
+          id,
+          service_radius_km
+        )
+      `)
+      .eq('merchants.registration_status', 'approved')
+      .eq('merchants.active', true);
+
+    if (error) {
+      console.error('Error getting delivery coverage analytics:', error);
+      return res.status(500).json({ error: 'Failed to get delivery coverage analytics' });
+    }
+
+    // Process analytics for each category
+    const analytics = data.map(category => {
+      const vendors = Array.isArray(category.merchants) ? category.merchants : [category.merchants];
+      const validVendors = vendors.filter(v => v !== null);
+
+      const vendorRadii = validVendors
+        .map(v => v.service_radius_km)
+        .filter(r => r !== null && r !== undefined);
+
+      const avgRadius = vendorRadii.length > 0
+        ? vendorRadii.reduce((sum, r) => sum + r, 0) / vendorRadii.length
+        : category.default_delivery_radius_km;
+
+      const maxRadius = vendorRadii.length > 0
+        ? Math.max(...vendorRadii)
+        : category.default_delivery_radius_km;
+
+      const minRadius = vendorRadii.length > 0
+        ? Math.min(...vendorRadii)
+        : category.default_delivery_radius_km;
+
+      const vendorsAtMax = validVendors.filter(v =>
+        v.service_radius_km === category.default_delivery_radius_km
+      ).length;
+
+      return {
+        category_id: category.id,
+        category_name: category.name,
+        category_icon: category.icon,
+        default_radius_km: category.default_delivery_radius_km,
+        total_vendors: validVendors.length,
+        average_vendor_radius_km: parseFloat(avgRadius.toFixed(2)),
+        largest_radius_km: maxRadius,
+        smallest_radius_km: minRadius,
+        vendors_at_category_maximum: vendorsAtMax
+      };
+    });
+
+    res.json(analytics);
+  } catch (error) {
+    console.error('Error getting delivery coverage analytics:', error);
+    res.status(500).json({ error: 'Failed to get delivery coverage analytics' });
+  }
+});
+
+// Get all delivery radii configuration (protected)
+router.get('/admin/delivery-radii', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('business_categories')
+      .select(`
+        id,
+        name,
+        icon,
+        default_delivery_radius_km,
+        merchants!inner (id)
+      `)
+      .eq('merchants.registration_status', 'approved')
+      .eq('merchants.active', true);
+
+    if (error) {
+      console.error('Error getting delivery radii:', error);
+      return res.status(500).json({ error: 'Failed to get delivery radii' });
+    }
+
+    const radiiConfig = data.map(category => ({
+      category_id: category.id,
+      category_name: category.name,
+      category_icon: category.icon,
+      default_delivery_radius_km: category.default_delivery_radius_km,
+      vendor_count: Array.isArray(category.merchants) ? category.merchants.length : 1
+    }));
+
+    res.json(radiiConfig);
+  } catch (error) {
+    console.error('Error getting delivery radii:', error);
+    res.status(500).json({ error: 'Failed to get delivery radii' });
+  }
+});
+
+// Update category delivery radius (protected)
+router.put('/admin/delivery-radii/:categoryId', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { radius_km } = req.body;
+
+    if (typeof radius_km !== 'number' || radius_km < 0) {
+      return res.status(400).json({ error: 'Invalid radius value' });
+    }
+
+    const { data, error } = await supabase
+      .from('business_categories')
+      .update({ default_delivery_radius_km: radius_km })
+      .eq('id', getParam(req.params.categoryId))
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating delivery radius:', error);
+      return res.status(500).json({ error: 'Failed to update delivery radius' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error updating delivery radius:', error);
+    res.status(500).json({ error: 'Failed to update delivery radius' });
+  }
+});
+
 // Admin user management (protected)
 router.post('/admin/users', authenticateAdmin, async (req: Request, res: Response) => {
   try {
