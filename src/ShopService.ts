@@ -649,7 +649,7 @@ export class ShopService {
         name: name,
         contact_phone: contactPhone,
         active: true,
-        is_open: true,
+        is_open: false,
         registration_status: 'pending'
       };
 
