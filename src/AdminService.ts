@@ -597,6 +597,7 @@ export class AdminService {
 
       if (error) {
         console.error('❌ Error suspending vendor:', error);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
         return false;
       }
 
@@ -604,6 +605,36 @@ export class AdminService {
       return true;
     } catch (error) {
       console.error('❌ Exception in suspendVendor:', error);
+      return false;
+    }
+  }
+
+  async rejectVendor(merchantId: string, reason?: string): Promise<boolean> {
+    try {
+      console.log('❌ Rejecting vendor:', merchantId);
+
+      const { data, error } = await supabase
+        .from('merchants')
+        .update({
+          registration_status: 'rejected',
+          active: false,
+          rejection_reason: reason || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', merchantId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error rejecting vendor:', error);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
+        return false;
+      }
+
+      console.log('✅ Vendor rejected successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Exception in rejectVendor:', error);
       return false;
     }
   }

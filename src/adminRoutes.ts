@@ -367,6 +367,20 @@ router.put('/admin/vendors/:id/suspend', authenticateAdmin, async (req: Request,
   }
 });
 
+router.put('/admin/vendors/:id/reject', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { reason } = req.body;
+    const success = await adminService.rejectVendor(getParam(req.params.id), reason);
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to reject vendor' });
+    }
+    res.json({ success: true, message: 'Vendor rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting vendor:', error);
+    res.status(500).json({ error: 'Failed to reject vendor' });
+  }
+});
+
 router.put('/admin/vendors/:id/activate', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const success = await adminService.activateVendor(getParam(req.params.id));
