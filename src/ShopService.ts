@@ -1099,6 +1099,7 @@ export class ShopService {
           service_radius_km,
           is_open,
           registration_status,
+          active,
           business_categories!inner (
             id,
             name,
@@ -1117,24 +1118,34 @@ export class ShopService {
 
       const { data, error } = await query;
 
+      console.log('📊 Query result:', { data: data?.length, error });
+
       if (error) {
         console.error('❌ Error fetching vendors:', error);
         return [];
       }
 
+      console.log('📊 Raw merchants data:', data);
+
       // Filter by distance and radius using PostGIS
       const nearbyVendors: NearbyVendor[] = [];
 
       for (const merchant of data) {
+        console.log('🔍 Processing merchant:', merchant.name, 'ID:', merchant.id);
+
         const category = Array.isArray(merchant.business_categories) ? merchant.business_categories[0] : merchant.business_categories;
         const categoryRadius = category.default_delivery_radius_km;
         const vendorRadius = merchant.service_radius_km;
+
+        console.log('📊 Category radius:', categoryRadius, 'Vendor radius:', vendorRadius);
 
         // Effective radius is MIN(category default, vendor radius)
         // If vendor radius is NULL, use category default
         const effectiveRadius = vendorRadius !== null && vendorRadius !== undefined
           ? Math.min(categoryRadius, vendorRadius)
           : categoryRadius;
+
+        console.log('📊 Effective radius:', effectiveRadius);
 
         // Calculate distance using PostGIS ST_DistanceSphere
         const { data: distanceData, error: distanceError } = await supabase.rpc('calculate_distance', {
@@ -1173,6 +1184,9 @@ export class ShopService {
           continue;
         }
 
+        console.log('📍 Shop location:', shopData.shop_location);
+        console.log('📍 Customer location:', customerLat, customerLng);
+
         // Calculate distance using PostGIS
         const distanceKm = await this.calculateDistanceBetweenPoints(
           customerLat,
@@ -1180,12 +1194,16 @@ export class ShopService {
           shopData.shop_location
         );
 
+        console.log('📏 Calculated distance:', distanceKm, 'km');
+
         if (distanceKm === null) {
           console.warn('⚠️ Could not calculate distance for vendor:', merchant.id);
           continue;
         }
 
         // Check if vendor is within effective radius
+        console.log('📏 Distance check:', distanceKm, '<=', effectiveRadius, '?', distanceKm <= effectiveRadius);
+
         if (distanceKm <= effectiveRadius) {
           nearbyVendors.push({
             id: merchant.id,
