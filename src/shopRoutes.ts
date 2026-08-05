@@ -339,6 +339,34 @@ router.put('/vendor-registrations/:id/resubmit', async (req: Request, res: Respo
   }
 });
 
+// Update vendor registration with document IDs
+router.put('/vendor-registrations/:id/documents', async (req: Request, res: Response) => {
+  try {
+    const documentIds = req.body;
+    console.log('📝 Updating vendor registration with documents:', documentIds);
+
+    const { error } = await supabase
+      .from('vendor_registration_requests')
+      .update({
+        ...documentIds,
+        verification_status: 'submitted',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', getParam(req.params.id));
+
+    if (error) {
+      console.error('❌ Error updating vendor registration with documents:', error);
+      return res.status(400).json({ error: 'Failed to update vendor registration with documents' });
+    }
+
+    console.log('✅ Vendor registration updated with documents successfully');
+    res.json({ success: true, message: 'Vendor registration updated with documents successfully' });
+  } catch (error) {
+    console.error('❌ Error updating vendor registration with documents:', error);
+    res.status(500).json({ error: 'Failed to update vendor registration with documents' });
+  }
+});
+
 // Get vendor category
 router.get('/shop/:id/category', async (req: Request, res: Response) => {
   try {

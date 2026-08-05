@@ -728,45 +728,58 @@
                         formData.append('entityId', vendorId);
                         formData.append('documentType', doc.type);
 
+                        console.log(`📤 Uploading ${doc.type}...`);
                         const uploadResponse = await fetch(`${API_BASE}/documents/upload`, {
                             method: 'POST',
                             body: formData
                         });
 
                         const uploadData = await uploadResponse.json();
+                        console.log(`📤 Upload response for ${doc.type}:`, uploadData);
 
                         if (uploadData.success) {
                             uploadedDocuments[doc.type] = uploadData.document_id;
                             console.log(`✅ Uploaded ${doc.type}: ${uploadData.document_id}`);
                         } else {
-                            throw new Error(`Failed to upload ${doc.type}`);
+                            console.error(`❌ Failed to upload ${doc.type}:`, uploadData);
+                            throw new Error(`Failed to upload ${doc.type}: ${uploadData.error || 'Unknown error'}`);
                         }
                     }
                 }
 
+                console.log('📋 All uploaded documents:', uploadedDocuments);
+
                 // Step 3: Update registration with document IDs
                 confirmBtn.textContent = 'Finalizing registration...';
+
+                const updatePayload = {
+                    national_id_doc_id: uploadedDocuments.national_id,
+                    proof_of_address_doc_id: uploadedDocuments.proof_of_address,
+                    shop_front_photo_doc_id: uploadedDocuments.shop_front_photo,
+                    interior_photo_doc_id: uploadedDocuments.interior_photo,
+                    health_certificate_doc_id: uploadedDocuments.health_certificate,
+                    food_handling_permit_doc_id: uploadedDocuments.food_handling_permit,
+                    restaurant_licence_doc_id: uploadedDocuments.restaurant_licence,
+                    business_licence_doc_id: uploadedDocuments.business_licence,
+                    trading_licence_doc_id: uploadedDocuments.trading_licence
+                };
+
+                console.log('📤 Updating registration with document IDs:', updatePayload);
+                console.log(`📤 Endpoint: ${API_BASE}/vendor-registrations/${registrationId}/documents`);
 
                 const updateResponse = await fetch(`${API_BASE}/vendor-registrations/${registrationId}/documents`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        national_id_doc_id: uploadedDocuments.national_id,
-                        proof_of_address_doc_id: uploadedDocuments.proof_of_address,
-                        shop_front_photo_doc_id: uploadedDocuments.shop_front_photo,
-                        interior_photo_doc_id: uploadedDocuments.interior_photo,
-                        health_certificate_doc_id: uploadedDocuments.health_certificate,
-                        food_handling_permit_doc_id: uploadedDocuments.food_handling_permit,
-                        restaurant_licence_doc_id: uploadedDocuments.restaurant_licence,
-                        business_licence_doc_id: uploadedDocuments.business_licence,
-                        trading_licence_doc_id: uploadedDocuments.trading_licence
-                    })
+                    body: JSON.stringify(updatePayload)
                 });
 
+                const updateData = await updateResponse.json();
+                console.log('📤 Update response:', updateData);
+
                 if (!updateResponse.ok) {
-                    throw new Error('Failed to update registration with documents');
+                    throw new Error(`Failed to update registration with documents: ${updateData.error || updateData.message || 'Unknown error'}`);
                 }
 
                 messageDiv.className = 'message success';
