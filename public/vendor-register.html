@@ -308,6 +308,8 @@
         <p class="subtitle">Register your shop and start selling on our platform</p>
         
         <form id="registrationForm">
+            <h2 style="margin-bottom: 20px; color: #333;">Business Information</h2>
+
             <div class="form-group">
                 <label for="businessName">Business Name</label>
                 <input type="text" id="businessName" name="businessName" required placeholder="Enter your business name">
@@ -359,47 +361,31 @@
             </div>
 
             <div class="form-group">
-                <label for "isFoodVendor">Is this a food business?</label>
+                <label for="isFoodVendor">Is this a food business?</label>
                 <select id="isFoodVendor" name="isFoodVendor">
                     <option value="false">No</option>
                     <option value="true">Yes</option>
                 </select>
             </div>
 
-            <div class="step-buttons">
-                <button type="button" id="nextBtn1" class="next-btn">Next: Registration Type</button>
-            </div>
-        </form>
+            <h2 style="margin: 30px 0 20px; color: #333;">Registration Type</h2>
 
-        <form id="registrationTypeForm" class="step">
-            <h2>Registration Type</h2>
-            <p class="subtitle">Select your business registration type</p>
-            
-            <div class="registration-type">
-                <div class="type-option" data-type="individual">
-                    <h4>👤 Individual/Informal</h4>
-                    <p>For informal businesses, street vendors, or individuals</p>
-                </div>
-                <div class="type-option" data-type="registered">
-                    <h4>🏢 Registered Business</h4>
-                    <p>For formally registered companies with certificates</p>
-                </div>
+            <div class="form-group">
+                <label>Registration Type</label>
+                <select id="registrationType" name="registrationType" required>
+                    <option value="">Select registration type</option>
+                    <option value="individual">Individual/Informal</option>
+                    <option value="registered">Registered Business</option>
+                </select>
             </div>
-
-            <input type="hidden" id="registrationType" name="registrationType" value="">
 
             <div class="form-group conditional-field" id="registeredBusinessFields">
                 <label for="certificateOfIncorporation">Certificate of Incorporation</label>
                 <input type="text" id="certificateOfIncorporation" name="certificateOfIncorporation" placeholder="Enter certificate number">
             </div>
 
-            <div class="step-buttons">
-                <button type="button" id="prevBtn2">Previous</button>
-                <button type="button" id="nextBtn2" class="next-btn">Next: Documents</button>
-            </div>
-        </form>
+            <h2 style="margin: 30px 0 20px; color: #333;">Documents</h2>
 
-        <form id="documentsForm" class="step">
             <div class="document-section">
                 <h3>📄 Identity Documents</h3>
                 <div class="form-group">
@@ -409,7 +395,6 @@
                         <p>Click to upload or drag and drop</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
 
                 <div class="form-group">
@@ -419,7 +404,6 @@
                         <p>Click to upload or drag and drop</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
             </div>
 
@@ -432,7 +416,6 @@
                         <p>Click to upload or drag and drop</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
 
                 <div class="form-group">
@@ -442,7 +425,6 @@
                         <p>Click to upload or drag and drop</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
             </div>
 
@@ -455,7 +437,6 @@
                         <p>Click to upload or drag and drop (optional)</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
 
                 <div class="form-group">
@@ -465,7 +446,6 @@
                         <p>Click to upload or drag and drop (optional)</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
 
                 <div class="form-group">
@@ -475,47 +455,45 @@
                         <p>Click to upload or drag and drop (optional)</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
             </div>
 
             <div class="document-section conditional-field" id="registeredBusinessDocs" style="display: none;">
                 <h3>📋 Registered Business Documents</h3>
                 <div class="form-group">
-                    <label>Business License</label>
+                    <label>Business License *</label>
                     <div class="file-upload" id="businessLicenseUpload">
                         <input type="file" id="businessLicense" name="businessLicense" accept="image/jpeg,image/png,application/pdf">
                         <p>Click to upload or drag and drop</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
 
                 <div class="form-group">
-                    <label>Trading License</label>
+                    <label>Trading License *</label>
                     <div class="file-upload" id="tradingLicenseUpload">
                         <input type="file" id="tradingLicense" name="tradingLicense" accept="image/jpeg,image/png,application/pdf">
                         <p>Click to upload or drag and drop</p>
                         <p class="file-preview"></p>
                     </div>
-                    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
                 </div>
             </div>
 
             <div class="step-buttons">
-                <button type="button" id="prevBtn3">Previous</button>
-                <button type="button" id="nextBtn3" class="next-btn">Next: Review</button>
+                <button type="button" id="reviewBtn">Review Information</button>
             </div>
         </form>
 
-        <form id="reviewForm" class="step">
-            <h2>Review Your Information</h2>
-            <div id="reviewContent"></div>
-            <div class="step-buttons">
-                <button type="button" id="prevBtn4">Previous</button>
-                <button type="submit" id="submitBtn">Submit Registration</button>
+        <div id="reviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+            <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 50px auto; max-height: 80vh; overflow-y: auto;">
+                <h2>Review Your Information</h2>
+                <div id="reviewContent"></div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button type="button" id="editBtn" style="padding: 10px 20px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Edit</button>
+                    <button type="button" id="confirmSubmitBtn" style="padding: 10px 20px; background: #f5576c; color: white; border: none; border-radius: 5px; cursor: pointer;">Submit Registration</button>
+                </div>
             </div>
-        </form>
+        </div>
 
         <div id="message" class="message"></div>
 
@@ -526,32 +504,8 @@
 
     <script>
         const API_BASE = '/api';
-        let currentStep = 1;
-        const totalSteps = 4;
         let uploadedDocuments = {};
         let selectedRegistrationType = '';
-
-        // Step navigation
-        function showStep(step) {
-            document.querySelectorAll('.step').forEach((el, index) => {
-                el.classList.toggle('active', index + 1 === step);
-            });
-            
-            document.querySelectorAll('.step-dot').forEach((dot, index) => {
-                dot.classList.remove('active', 'completed');
-                if (index + 1 < step) {
-                    dot.classList.add('completed');
-                } else if (index + 1 === step) {
-                    dot.classList.add('active');
-                }
-            });
-            
-            currentStep = step;
-            
-            if (step === 4) {
-                populateReview();
-            }
-        }
 
         // File upload handling (just show selected file, no upload yet)
         function setupFileUpload(uploadId, inputId, documentType) {
@@ -592,24 +546,18 @@
         }
 
         // Registration type selection
-        document.querySelectorAll('.type-option').forEach(option => {
-            option.addEventListener('click', () => {
-                document.querySelectorAll('.type-option').forEach(o => o.classList.remove('selected'));
-                option.classList.add('selected');
-                selectedRegistrationType = option.dataset.type;
-                document.getElementById('registrationType').value = selectedRegistrationType;
-                
-                const registeredFields = document.getElementById('registeredBusinessFields');
-                const registeredDocs = document.getElementById('registeredBusinessDocs');
-                
-                if (selectedRegistrationType === 'registered') {
-                    registeredFields.classList.add('show');
-                    registeredDocs.style.display = 'block';
-                } else {
-                    registeredFields.classList.remove('show');
-                    registeredDocs.style.display = 'none';
-                }
-            });
+        document.getElementById('registrationType').addEventListener('change', (e) => {
+            selectedRegistrationType = e.target.value;
+            const registeredFields = document.getElementById('registeredBusinessFields');
+            const registeredDocs = document.getElementById('registeredBusinessDocs');
+
+            if (selectedRegistrationType === 'registered') {
+                registeredFields.classList.add('show');
+                registeredDocs.style.display = 'block';
+            } else {
+                registeredFields.classList.remove('show');
+                registeredDocs.style.display = 'none';
+            }
         });
 
         // Food vendor toggle
@@ -618,100 +566,8 @@
             foodSection.style.display = e.target.value === 'true' ? 'block' : 'none';
         });
 
-        // Step navigation
-        document.getElementById('nextBtn1').addEventListener('click', () => {
-            if (validateStep1()) showStep(2);
-        });
-
-        document.getElementById('prevBtn2').addEventListener('click', () => showStep(1));
-        document.getElementById('nextBtn2').addEventListener('click', () => {
-            if (selectedRegistrationType) {
-                showStep(3);
-            } else {
-                alert('Please select a registration type');
-            }
-        });
-
-        document.getElementById('prevBtn3').addEventListener('click', () => showStep(2));
-        document.getElementById('nextBtn3').addEventListener('click', () => {
-            if (validateStep3()) showStep(4);
-        });
-
-        document.getElementById('prevBtn4').addEventListener('click', () => showStep(3));
-
-        function validateStep1() {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const messageDiv = document.getElementById('message');
-            
-            if (password !== confirmPassword) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = 'Passwords do not match';
-                messageDiv.style.display = 'block';
-                return false;
-            }
-
-            if (password.length < 6) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = 'Password must be at least 6 characters';
-                messageDiv.style.display = 'block';
-                return false;
-            }
-            
-            return true;
-        }
-
-        function validateStep3() {
-            const requiredDocs = ['nationalId', 'proofOfAddress', 'shopFrontPhoto', 'interiorPhoto'];
-            const messageDiv = document.getElementById('message');
-
-            for (const doc of requiredDocs) {
-                const input = document.getElementById(doc);
-                if (!input.files || input.files.length === 0) {
-                    messageDiv.className = 'message error';
-                    messageDiv.textContent = 'Please upload all required documents';
-                    messageDiv.style.display = 'block';
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        function populateReview() {
-            const reviewContent = document.getElementById('reviewContent');
-            const formData = {
-                business_name: document.getElementById('businessName').value,
-                business_phone: document.getElementById('businessPhone').value,
-                business_email: document.getElementById('businessEmail').value,
-                business_address: document.getElementById('businessAddress').value,
-                business_license_number: document.getElementById('businessLicenseNumber').value,
-                tax_id: document.getElementById('taxId').value,
-                business_description: document.getElementById('businessDescription').value,
-                shop_address: document.getElementById('shopAddress').value,
-                registration_type: selectedRegistrationType,
-                is_food_vendor: document.getElementById('isFoodVendor').value
-            };
-
-            let html = '<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">';
-            html += '<h3>Business Information</h3>';
-            for (const [key, value] of Object.entries(formData)) {
-                if (value) {
-                    html += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
-                }
-            }
-            html += '<h3>Uploaded Documents</h3>';
-            html += '<p>Documents uploaded: ' + Object.keys(uploadedDocuments).length + ' files</p>';
-            html += '</div>';
-            
-            reviewContent.innerHTML = html;
-        }
-
-        // Form submission
-        document.getElementById('reviewForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const submitBtn = document.getElementById('submitBtn');
+        // Review button
+        document.getElementById('reviewBtn').addEventListener('click', () => {
             const messageDiv = document.getElementById('message');
 
             // Validate password
@@ -749,8 +605,52 @@
                 }
             }
 
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Creating vendor...';
+            populateReview();
+            document.getElementById('reviewModal').style.display = 'block';
+        });
+
+        // Edit button
+        document.getElementById('editBtn').addEventListener('click', () => {
+            document.getElementById('reviewModal').style.display = 'none';
+        });
+
+        function populateReview() {
+            const reviewContent = document.getElementById('reviewContent');
+            const formData = {
+                business_name: document.getElementById('businessName').value,
+                business_phone: document.getElementById('businessPhone').value,
+                business_email: document.getElementById('businessEmail').value,
+                business_address: document.getElementById('businessAddress').value,
+                business_license_number: document.getElementById('businessLicenseNumber').value,
+                tax_id: document.getElementById('taxId').value,
+                business_description: document.getElementById('businessDescription').value,
+                shop_address: document.getElementById('shopAddress').value,
+                registration_type: selectedRegistrationType,
+                is_food_vendor: document.getElementById('isFoodVendor').value,
+                certificate_of_incorporation: document.getElementById('certificateOfIncorporation').value
+            };
+
+            let html = '<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">';
+            html += '<h3>Business Information</h3>';
+            for (const [key, value] of Object.entries(formData)) {
+                if (value) {
+                    html += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
+                }
+            }
+            html += '<h3>Uploaded Documents</h3>';
+            html += '<p>Documents ready to upload: ' + Object.keys(uploadedDocuments).length + ' files</p>';
+            html += '</div>';
+
+            reviewContent.innerHTML = html;
+        }
+
+        // Form submission
+        document.getElementById('confirmSubmitBtn').addEventListener('click', async () => {
+            const confirmBtn = document.getElementById('confirmSubmitBtn');
+            const messageDiv = document.getElementById('message');
+
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Creating vendor...';
             messageDiv.style.display = 'none';
 
             try {
@@ -789,7 +689,7 @@
                 console.log('✅ Vendor created:', vendorId);
 
                 // Step 2: Upload documents with actual vendor ID
-                submitBtn.textContent = 'Uploading documents...';
+                confirmBtn.textContent = 'Uploading documents...';
                 uploadedDocuments = {};
 
                 const documentTypes = [
@@ -835,7 +735,7 @@
                 }
 
                 // Step 3: Update registration with document IDs
-                submitBtn.textContent = 'Finalizing registration...';
+                confirmBtn.textContent = 'Finalizing registration...';
 
                 const updateResponse = await fetch(`${API_BASE}/vendor-registrations/${registrationId}/documents`, {
                     method: 'PUT',
@@ -862,35 +762,23 @@
                 messageDiv.className = 'message success';
                 messageDiv.textContent = 'Registration submitted successfully! Your application is pending approval.';
                 messageDiv.style.display = 'block';
+                document.getElementById('reviewModal').style.display = 'none';
                 document.getElementById('registrationForm').reset();
-                document.getElementById('registrationTypeForm').reset();
-                document.getElementById('documentsForm').reset();
                 uploadedDocuments = {};
                 selectedRegistrationType = '';
-                showStep(1);
 
             } catch (error) {
                 messageDiv.className = 'message error';
                 messageDiv.textContent = error.message || 'Registration failed. Please try again.';
                 messageDiv.style.display = 'block';
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Registration';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Submit Registration';
             }
         });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            const container = document.querySelector('.container');
-            const stepIndicator = document.createElement('div');
-            stepIndicator.className = 'step-indicator';
-            for (let i = 1; i <= totalSteps; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'step-dot' + (i === 1 ? ' active' : '');
-                stepIndicator.appendChild(dot);
-            }
-            container.insertBefore(stepIndicator, document.getElementById('registrationForm'));
-
             setupFileUpload('nationalIdUpload', 'nationalId', 'national_id');
             setupFileUpload('proofOfAddressUpload', 'proofOfAddress', 'proof_of_address');
             setupFileUpload('shopFrontPhotoUpload', 'shopFrontPhoto', 'shop_front_photo');
@@ -900,8 +788,6 @@
             setupFileUpload('restaurantLicenseUpload', 'restaurantLicense', 'restaurant_licence');
             setupFileUpload('businessLicenseUpload', 'businessLicense', 'business_licence');
             setupFileUpload('tradingLicenseUpload', 'tradingLicense', 'trading_licence');
-
-            showStep(1);
         });
     </script>
 </body>
