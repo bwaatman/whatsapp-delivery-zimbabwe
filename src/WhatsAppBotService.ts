@@ -45,7 +45,8 @@ export class WhatsAppBotService {
 
     this.client = new Client({
       authStrategy: new LocalAuth({
-        clientId: 'zimdelivery-bot'
+        clientId: 'zimdelivery-bot',
+        dataPath: path.join(__dirname, '..', '.wwebjs_auth')
       }),
       puppeteer: {
         headless: true,
@@ -119,9 +120,11 @@ export class WhatsAppBotService {
       console.log('📨 Incoming message from:', phone);
       console.log('📝 Message:', messageBody);
       console.log('📝 Message starts with #?', messageBody.startsWith('#'));
+      console.log('📍 Has location?', !!message.location);
 
       // Check if message is a location
       if (message.location) {
+        console.log('📍 Processing location message');
         await this.handleLocationMessage(message, phone, message.location);
         return;
       }
@@ -731,9 +734,14 @@ Please share your location so we can show businesses near you.`;
 
       console.log('📍 Session:', session);
       console.log('📍 Session orderId:', session?.orderId);
+      console.log('📍 Session has order components:', {
+        selectedVendor: !!session?.selectedVendor,
+        selectedProducts: session?.selectedProducts && session.selectedProducts.length > 0,
+        customerName: !!session?.customerName
+      });
 
-      // If no active order, use location discovery flow
-      if (!session || !session.orderId) {
+      // If no active order components, use location discovery flow
+      if (!session || (!session.selectedVendor && (!session.selectedProducts || session.selectedProducts.length === 0))) {
         await this.handleLocationWithDiscovery(message, phone, location);
         return;
       }
