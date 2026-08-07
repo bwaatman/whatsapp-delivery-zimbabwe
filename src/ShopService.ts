@@ -1205,6 +1205,15 @@ export class ShopService {
         console.log('📏 Distance check:', distanceKm, '<=', effectiveRadius, '?', distanceKm <= effectiveRadius);
 
         if (distanceKm <= effectiveRadius) {
+          // For food and grocery categories, only show open shops
+          // For other categories, show all shops regardless of open status
+          const isFoodOrGrocery = category.name === 'Restaurant' || category.name === 'Grocery';
+
+          if (isFoodOrGrocery && !merchant.is_open) {
+            console.log('⚠️ Skipping closed shop for food/grocery category:', merchant.name);
+            continue;
+          }
+
           nearbyVendors.push({
             id: merchant.id,
             name: merchant.name,
